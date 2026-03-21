@@ -1,171 +1,304 @@
-# NT_profile_database 数据记录方案（v0.1）
+# NT_profile_database 数据记录方案（v0.4，NT-only）
 
-本方案的目标：先把 **NT 实验中公开可获得的剖面点数据**（ne/Te/Ti/p/rotation/Er…）做成一个**结构化数据库**，并保证每条剖面都能追溯到：
+本版方案在原始数据记录方案基础上，**进一步收紧收录范围**，仅面向当前任务所需的数据，并对 **ID 命名规则** 进行了统一整理。
 
-- 论文（paper_id / DOI / 本地PDF路径）
-- Figure 编号（fig_id）
-- 工况信息（shot / time_window / regime，缺失时需说明原因）
-- 坐标定义（coord_name + coord_desc，必须写清楚“归一化到什么、如何映射”）
-- 单位（图上原单位 y_unit_raw + 规范单位 y_unit_SI）
+## 0. 当前收录范围
+
+仅收录以下内容：
+
+1. **NT 工况**  
+   
+   - 只记录 NT（Negative Triangularity）相关工况与剖面  
+   - 不录入仅有 PT（Positive Triangularity）数据的剖面  
+   - 如果一篇论文同时包含 NT 和 PT，记录在额外的登记表内，以便后续查找
+
+2. **只收温度与密度量**
+   
+   - 温度：`Te`、`Ti`
+   - 密度：`ne`、`ni`
+   - 若论文明确给出其他**实验测得**的温度/密度量（如`n_imp`），可在备注说明后酌情纳入
+   - **不再纳入**：`p`、`rotation`、`Er`、流速、热流等非温度/密度量
+
+3. **只收实验数据图**
+   
+   - 只处理**实验测量结果对应的 figure / curve**
+   - **排除**以下内容：
+     - 模拟数据图
+     - 数值计算结果图
+     - 建模拟合单独生成的图
+     - 纯理论图
+     - synthetic diagnostic / post-processed simulation curves
+   - 若一张图中同时含实验曲线与模拟曲线，只提取**实验曲线**，并在 `notes` 中说明“同图含模拟曲线，已排除”
+   - 对于含有模拟数据图的论文，应记录在额外的登记表内，以便后续查找
 
 ---
 
 ## 1. 将使用的文件
 
-- **`NT_profile_database_template.xlsx`**
+- **`paper_registry_and_template.xlsx`**
   
-  - `01_PAPERS_论文`：论文清单（paper_id 入口）
-  - `02_CASES_工况`：每篇论文里的“实验工况/放电段”清单（case_id 入口）
-  - `03_PROFILES_剖面`：每条剖面曲线的元数据（profile_id 入口）
-  - `04_POINTS_MANUAL`：少量点数据可手工填（不推荐大规模）
-  - `05_DICTIONARIES`：下拉选项词典（变量、坐标、提取方式、状态、单位等）
-  - `06_QA_LOG`：质检记录（谁查的、问题是什么、怎么修）
+  - `01_PAPERS`：论文登记
+  - `02_CASES`：仅登记 NT 工况
+  - `03_PROFILES`：仅登记 NT + 实验 + 温度/密度剖面
+  - `04_QA_LOG`：质检记录（原为06）
 
-- **可选：`data/digitized/*.csv`**（推荐的点数据存储方式）
+- **data：`data/paper_id/*.csv`**
   
-  - 每条剖面一份CSV，至少两列：`x,y`
-  - 如果有误差棒，可加：`x_err,y_err`（单位与剖面元数据保持一致）
+  - 每条剖面一份 CSV，至少两列：`x,y`
 
-> 推荐采用“**Excel记录元数据 + CSV存点数据**”的混合方式：前期人工最方便，后期也最容易自动化合并。
+> 推荐继续采用“**Excel 记录元数据 + CSV 存点数据**”的方式，但当前数据库仅保留 NT 实验温度/密度剖面。
 
 ---
 
-## 2. 记录方式
+## 2. 工况记录
 
-### Excel + CSV
+`02_CASES` 中：
 
-- 元数据：填 `01/02/03`
-- 点数据：每条剖面导出一个CSV放到 `data/digitized/`
-- 在 `03_PROFILES_剖面` 里用 `points_source=csv` + `points_file_relpath=...` 指向CSV
+- 每个 `case_id` 对应一个可区分、可追溯的 NT 工况
+- `regime` 固定记录为 `NT`
+- 若原论文同页同时比较 NT/PT，则该表仅登记 NT 对应 case
+- `notes` 可注明：
+  - `paper also contains PT comparison`
+  - `figure also contains simulation curve, excluded from profile extraction`
 
 ---
 
-## 3. 强制规范
+## 3. 剖面元数据
 
-### 3.1 ID 规则
+`03_PROFILES` 中每条曲线仍为一行，但必须满足以下全部条件：
 
-- `paper_id`：建议 `设备_作者年份`（例：`AUG_Vanovac2024`）
-- `case_id`：建议 `paper_id__简要工况标签`（例：`AUG_Vanovac2024__case_fav_unfav`）
-- `profile_id`：建议 `paper_id__fig__variable__label`（例：`AUG_Vanovac2024__Fig3a__Te__fav`）
+- 来自 NT 工况
+- 来自实验数据图
+- 变量属于温度/密度范围
+- 曲线可追溯到 paper / case / figure / legend
 
-### 3.2 每条剖面必须填的字段（`03_PROFILES_剖面`）
+### 允许的变量
 
-以下字段空缺视为 **不入库**：
+优先只使用以下变量：
+
+- `ne`
+- `Te`
+- `Ti`
+- `ni`
+
+如遇论文明确给出其他**实验测量**的温度/密度量，可暂用：
+
+- `n_imp`
+- `T_imp`
+
+但必须在 `notes` 中说明来源和物理含义。
+
+### 每条剖面必须填的字段
+
+以下字段空缺则**不入库**：
 
 - `profile_id`
 - `paper_id`
-- `case_id`（拿不到shot/time也行，但必须有case_id）
+- `case_id`
 - `fig_id`
 - `variable`
 - `coord_name`
-- `coord_desc`（必须写清楚坐标定义，不能只写“rho”）
-- `y_unit_raw`（图上原单位）
-- `extraction_method`（手工/AI/混合，见第5节）
-- `status`（planned/digitized/qa_passed/imported）
+- `coord_desc`
+- `y_unit_raw`
+- `y_unit_SI`
+- `data_origin`（必须是 `experimental`）
+- `extraction_method`
+- `status`
 
-> shot/time 缺失允许，但必须在 `notes` 写明：论文未给出 / 图注无信息 / 无法确认。
+### 关键字段要求
+
+- `data_origin`
+  - 只能填：`experimental`
+  - 若为 `simulation` 或 `mixed`，该曲线不得入当前库
+- `variable`
+  - 只允许温度/密度类变量
+- `notes`
+  - 若原图中混有模拟曲线，必须注明 `simulation curves excluded`
 
 ---
 
-## 4. 操作流程
+## 4. 点数据存储
 
-### Step 1：登记论文（`01_PAPERS_论文`）
+文件：`data/paper_id/<profile_id>.csv`
 
-每新增一篇论文，填一行：
-
-- `paper_id`
-- `title/year/journal/doi`
-- `device`
-- `local_pdf_relpath`
-- `notes`
-
-### Step 2：登记工况（`02_CASES_工况`）
-
-每篇论文里通常有多个放电/阶段/三角形度扫描：
-
-- 一种“可区分、可追溯”的工况 = 一行 `case_id`
-- 优先填：shot、time_window、regime（NT/PT、L/H、ECRH/NBI…）
-- 全局量（Bt/Ip/Paux/n̄e/q95…）能填尽量填；缺失写 N/A
-
-### Step 3：登记剖面元数据（`03_PROFILES_剖面`）
-
-每条曲线（一个变量、一条颜色/图例） = 一行 `profile_id`
-
-关键字段怎么填：
-
-- `fig_id`：如 `Fig.3a` / `FIG.1`
-- `variable`：从下拉选（ne/Te/Ti/pe/v_tor/Er…）
-- `species`：e/i/C/impurity 等
-- `coord_name`：从下拉选（rho_pol / rho_tor / sqrt_psi_tor_norm / R-Rsep…）
-- `coord_desc`：用一句话写清楚坐标定义与映射方式（例：“mapped to normalized poloidal flux ρ_pol; profiles shown across pedestal and SOL”）
-- `y_unit_raw`：图上单位（keV、10^19 m^-3、kPa…）
-- `y_unit_SI`：规范单位（eV、m^-3、Pa…；拿不准可先填 other 并在notes说明）
-- `points_source`：`csv` 或 `manual_sheet`
-- `points_file_relpath`：如果是csv，填 `data/digitized/<profile_id>.csv`
-- `curve_label/curve_color`：写图例/颜色，方便复核
-- `extraction_confidence(1-5)`：1=不确定，5=非常确定（用于后续筛选）
-
-### Step 4：录入点数据
-
-文件：`data/digitized/<profile_id>.csv`
 最低两列：
 
 - `x,y`
 
-可选列：
+要求：
 
-- `x_err,y_err`
-
-注意：
-
-- x 与 y 的单位必须与 `03_PROFILES_剖面` 里一致
-- 建议使用WebPlotDigitizer
+- x/y 单位必须与 `03_PROFILES` 一致
+- 使用 WebPlotDigitizer
 
 ---
 
-## 5. 人工还是AI辅助
+## 5. 常见排除情形
 
-在 `03_PROFILES_剖面` 里用两个字段锁死：
+以下情况直接不入当前库：
 
-- `extraction_method`（下拉）
-  
-  - `manual_digitize`：人工用数字化工具抠点
-  - `ai_digitize`：AI从图像/矢量提取点（仍需人工复核）
-  - `manual_table`：人工从论文表格抄录
-  - `ai_table`：AI从表格/补充材料抽取（仍需人工复核）
-  - `direct_numeric`：作者直接给出数值文件/数据表（最可靠）
-  - `hybrid`：混合（必须在notes说明哪部分AI）
-
-- `digitizer_tool`
-  
-  - 例：WebPlotDigitizer / Engauge / Origin / “AI+manual check”
-
-强烈建议：任何 `ai_*` 都必须：
-
-- `extraction_confidence ≤ 4`（除非有第二人复核）
-- 在 `06_QA_LOG` 留一条复核记录
+- 只有 PT 剖面，没有 NT
+- 只有压力、旋转或电场，没有温度或密度
+- 图完全来自模拟结果
+- 图中实验与模拟无法区分
+- 坐标定义、变量定义或图例无法确认
 
 ---
 
-## 6. 质检（QA）怎么做才不拖慢
+## 6. 推荐 ID 规则
 
-最小质检规则（建议每条剖面都做）：
+### 6.1 `paper_id`
 
-1) **追溯检查**：paper_id / fig_id / coord_desc / y_unit_raw 是否完整
-2) **单调性检查**：x 是否大致单调（非单调通常是导出点顺序乱）
-3) **范围检查**：x 是否落在图轴范围；y 是否出现明显离谱值（例如 Te=300 keV）
-4) **单位检查**：10^19 m^-3 是否被当成 m^-3（最常见错误）
+`paper_id` 统一命名为：
 
-质检记录写到 `06_QA_LOG`：
+`作者_设施_期刊_年份`
 
-- `result(pass/fail)` + `issue` + `suggested_fix`
-- 修完后将 `03_PROFILES_剖面.status` 改为 `qa_passed`
+要求：
+
+- 作者：使用**第一作者姓氏**
+- 设施：使用**实验装置/设施缩写**，如 `AUG`、`TCV`、`DIII-D`、`JET`
+- 期刊：使用**统一缩写**
+- 年份：使用论文发表年份
+
+示例：
+
+- `Aucone_AUG_PPCF_2024`
+- `Vanovac_TCV_NF_2023`
+- `Smith_DIIID_PRL_2022`
+
+### 6.2 `case_id`
+
+`case_id` 统一命名为：
+
+`paper_id__NT__简要标签`
+
+说明：
+
+- 固定保留 `NT`
+- 简要标签用于区分同一篇论文中的不同 NT 工况
+- 标签应尽量短且可读，如 `fav`、`unfav`、`ddt`、`ECRH`、`NBIECRH`
+
+示例：
+
+- `Aucone_AUG_PPCF_2024__NT__fav`
+- `Aucone_AUG_PPCF_2024__NT__ddt`
+
+### 6.3 `profile_id`
+
+`profile_id` 统一命名为：
+
+`paper_id__FigX__变量__label`
+
+说明：
+
+- `FigX`：写成适合 ID 的标准形式，如 `Fig3a`、`Fig16b`
+- `变量`：仅使用本项目允许的温度/密度变量，如 `Te`、`Ti`、`ne`
+- `label`：填写图例或曲线标签，便于唯一追溯
+
+示例：
+
+- `Aucone_AUG_PPCF_2024__Fig3a__Te__fav`
+- `Aucone_AUG_PPCF_2024__Fig16b__ne__ddt`
+
+### 6.4 分隔符规则
+
+- 单下划线 `_`：用于单个字段内部组合，如 `Aucone_AUG_PPCF_2024`
+- 双下划线 `__`：用于不同层级之间分隔，如 `paper_id__NT__fav`
+
+### 6.5 期刊缩写建议
+
+为避免命名不统一，建议优先使用以下标准缩写：
+
+- `PPCF` = *Plasma Physics and Controlled Fusion*
+- `NF` = *Nuclear Fusion*
+- `PRL` = *Physical Review Letters*
+- `PoP` = *Physics of Plasmas*
 
 ---
 
-## 7. 常见坑（提前规避）
+## 7. 本版与原版相比的核心变化
 
-- 坐标没写清楚：只写“rho” → 后面无法比较不同设备/不同映射
-- 单位不统一：10^19 m^-3、keV、kPa 未换算 → 拟合/AI会学到假规律
-- 没有曲线标签：同一figure多条曲线无法追溯
-- AI提取但没复核：点偏了还以为是物理差异
+- 删除压力、旋转、Er 等非目标变量
+- 明确排除 simulation-only 图
+- 删除Excel 主表中的00、04、05部分，其中DICTIONARIES移至Readme文件Appendix中
+- **统一修订 ID 命名规则：`paper_id` 改为 `作者_设施_期刊_年份`**
+- 新增一个登记表：
+  * `论文处理信息登记表.xlsx`
+
+---
+
+## Appendix A. 数据字典
+
+本附录由原 Excel 中的 `05_DICTIONARIES` 整理而来，仅保留**当前 NT-only 数据库实际需要**的字典项
+
+### A.0 整理原则
+
+- 只保留与 **NT + experimental + temperature/density profiles** 相关的字典内容
+- 删除与当前方案无关的变量、单位和冗余项
+- 若后续遇到本附录未覆盖、但**确属实验测得的温度/密度量**，可临时补充；但必须在 `notes` 中说明来源与物理含义
+
+### A.1 `variable` 允许值
+
+| `variable` | 含义                   | 是否纳入当前库 | 说明                   |
+| ---------- | -------------------- | -------:| -------------------- |
+| `ne`       | electron density     | 是       | 优先纳入                 |
+| `Te`       | electron temperature | 是       | 优先纳入                 |
+| `Ti`       | ion temperature      | 是       | 优先纳入                 |
+| `ni`       | ion density          | 是       | 优先纳入                 |
+| `n_imp`    | impurity density     | 有条件     | 必须在 `notes` 中说明物种与来源 |
+| `T_imp`    | impurity temperature | 有条件     | 必须在 `notes` 中说明物种与来源 |
+
+> 已从原 dictionary 中删除的非目标变量包括：`pe`、`p`、`v_tor`、`omega_tor`、`Er`、`nC`、`TC`、`Zeff`、`q`、`iota`、`phi`、`Prad` 等。
+
+### A.2 `coord_name` 推荐取值
+
+| `coord_name`        | 含义 / 使用说明                     |
+| ------------------- | ----------------------------- |
+| `rho_pol`           | 归一化 poloidal flux 坐标          |
+| `rho_tor`           | 归一化 toroidal flux 坐标          |
+| `sqrt_psi_tor_norm` | 归一化 toroidal flux 的平方根形式      |
+| `psi_N`             | 归一化 poloidal flux             |
+| `r_a`               | 以小半径 `a` 归一化的径向坐标             |
+| `R-Rsep`            | 相对 separatrix 的径向坐标           |
+| `R`                 | 大半径坐标                         |
+| `r`                 | 径向坐标；必须在 `coord_desc` 中写清具体定义 |
+| `other`             | 非标准坐标；必须在 `coord_desc` 中完整说明  |
+
+### A.3 `extraction_method` 允许值
+
+| `extraction_method` | 含义             | 使用建议                 |
+| ------------------- | -------------- | -------------------- |
+| `manual_digitize`   | 人工从图中 digitize | **推荐默认方式**           |
+| `ai_digitize`       | AI 辅助 digitize | 原则上不可使用              |
+| `manual_table`      | 人工从正文/附录表格录入   | 若论文直接给表，优先于 digitize |
+| `ai_table`          | AI 辅助表格提取      | 仅可在人工复核后使用           |
+| `direct_numeric`    | 论文已直接提供数值      | 适用于补充材料或正文可复制数值      |
+| `hybrid`            | 多种方式混合         | 必须在 `notes` 中说明具体流程  |
+
+> 当前点数据提取工具仍推荐统一使用 **WebPlotDigitizer**
+
+### A.4 `status` 允许值
+
+| `status`    | 含义          |
+| ----------- | ----------- |
+| `planned`   | 已登记，待提取     |
+| `digitized` | 已完成曲线提取，待复核 |
+| `imported`  | 已从表格/数值源导入  |
+| `qa_passed` | 已完成质检并通过    |
+| `rejected`  | 不纳入当前库      |
+
+### A.5 `y_unit_SI` 规范写法
+
+| 适用变量                | `y_unit_SI` | 说明                                          |
+| ------------------- | ----------- | ------------------------------------------- |
+| `ne`, `ni`, `n_imp` | `m^-3`      | `y_unit_raw` 可保留论文原写法，如 `10^19 m^-3`        |
+| `Te`, `Ti`, `T_imp` | `eV`        | `y_unit_raw` 可为 `eV` 或 `keV`，但需在元数据中如实记录原单位 |
+
+### A.6 清理说明
+
+原 `05_DICTIONARIES` 中与当前 NT-only 方案无关的部分已删除，主要包括：
+
+- 非温度/密度变量项
+- 与上述变量对应、但已不再使用的单位项（如 `Pa`、`kPa`、`m/s`、`km/s`、`rad/s`、`krad/s`、`V/m`、`kV/m` 等）
+- 对当前 README 规则没有实际约束作用的冗余占位内容
+
+后续若数据库范围再次扩展，应优先修改 README 中本附录，而不是恢复旧版混合式 dictionary 表。
