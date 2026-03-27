@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Overlay Studio Pro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#f5f8fd;
+    --bg-1:#edf3fb;
+    --bg-2:#e7eef8;
+    --surface:rgba(255,255,255,.74);
+    --surface-strong:rgba(255,255,255,.92);
+    --surface-soft:rgba(255,255,255,.56);
+    --line:rgba(136,156,186,.22);
+    --line-soft:rgba(136,156,186,.12);
+    --text:#0f1728;
+    --text-soft:#65758e;
+    --brand:#3b82f6;
+    --brand-2:#60a5fa;
+    --accent:#6d5efc;
+    --mint:#29c7ac;
+    --danger:#f06f86;
+    --warning:#f4a261;
+    --shadow-lg:0 28px 90px rgba(78,100,133,.16);
+    --shadow-md:0 16px 40px rgba(78,100,133,.12);
+    --shadow-sm:0 8px 20px rgba(78,100,133,.08);
+    --radius-xl:30px;
+    --radius-lg:22px;
+    --radius-md:18px;
+    --radius-sm:14px;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    overflow:hidden;
+    font-family:"Manrope","SF Pro Display","Segoe UI Variable","Helvetica Neue",Arial,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1200px 520px at 12% -10%, rgba(59,130,246,.18), transparent 60%),
+      radial-gradient(900px 460px at 88% -6%, rgba(109,94,252,.14), transparent 58%),
+      radial-gradient(760px 320px at 50% 110%, rgba(41,199,172,.12), transparent 60%),
+      linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 45%, var(--bg-2) 100%);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    letter-spacing:.003em;
+  }
+
+  body::before{
+    content:"";
+    position:fixed;
+    inset:-10%;
+    pointer-events:none;
+    background:
+      radial-gradient(460px 460px at var(--mx,50%) var(--my,20%), rgba(59,130,246,.10), transparent 52%),
+      radial-gradient(360px 360px at calc(var(--mx,50%) + 12%) calc(var(--my,20%) - 10%), rgba(109,94,252,.08), transparent 56%);
+    z-index:0;
+    transition:opacity .25s ease;
+  }
+
+  .orb{
+    position:fixed;
+    border-radius:999px;
+    filter:blur(44px);
+    opacity:.42;
+    pointer-events:none;
+    z-index:0;
+    animation: float 18s ease-in-out infinite;
+  }
+  .orb.a{ width:260px; height:260px; background:#bdd7ff; top:56px; left:120px; }
+  .orb.b{ width:300px; height:300px; background:#d7ccff; top:140px; right:170px; animation-delay:-5s; }
+  .orb.c{ width:240px; height:240px; background:#c8f5ed; bottom:70px; right:320px; animation-delay:-10s; }
+  @keyframes float{
+    0%,100%{transform:translate(0,0)}
+    50%{transform:translate(10px,-16px)}
+  }
+
+  .app{
+    position:relative;
+    z-index:1;
+    height:100vh;
+    padding:18px;
+    display:grid;
+    grid-template-columns:360px minmax(0,1fr) 340px;
+    gap:16px;
+  }
+
+  .glass{
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    background:linear-gradient(180deg, rgba(255,255,255,.86), rgba(255,255,255,.64));
+    border:1px solid rgba(255,255,255,.66);
+    box-shadow:var(--shadow-lg);
+  }
+
+  .left-rail, .right-rail, .center-stage{
+    min-height:0;
+    border-radius:34px;
+    position:relative;
+  }
+
+  .left-rail, .right-rail{
+    overflow:auto;
+    padding:14px;
+  }
+
+  .left-rail::before,
+  .right-rail::before,
+  .center-stage::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    border-radius:inherit;
+    pointer-events:none;
+    background:linear-gradient(120deg, rgba(255,255,255,.32), rgba(255,255,255,0) 28%, rgba(255,255,255,.10) 60%, rgba(255,255,255,0) 100%);
+    mask:linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
+    -webkit-mask:linear-gradient(#000,#000) content-box, linear-gradient(#000,#000);
+    padding:1px;
+    -webkit-mask-composite:xor;
+            mask-composite:exclude;
+    opacity:.7;
+  }
+
+  .brand-card, .section, .topbar-card, .loupe-card, .mini-card, .info-card, .shortcut-card{
+    position:relative;
+    overflow:hidden;
+    border-radius:26px;
+    background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(255,255,255,.70));
+    border:1px solid rgba(255,255,255,.72);
+    box-shadow:var(--shadow-sm);
+    transition:transform .28s cubic-bezier(.22,1,.36,1), box-shadow .28s ease, border-color .24s ease;
+  }
+  .brand-card:hover, .section:hover, .topbar-card:hover, .loupe-card:hover, .mini-card:hover, .info-card:hover, .shortcut-card:hover{
+    transform:translateY(-1px);
+    box-shadow:0 20px 50px rgba(78,100,133,.14);
+    border-color:rgba(59,130,246,.22);
+  }
+  .brand-card::before, .section::before, .topbar-card::before, .loupe-card::before, .mini-card::before, .info-card::before, .shortcut-card::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(118deg, rgba(255,255,255,.44) 0%, rgba(255,255,255,0) 28%, rgba(255,255,255,.16) 58%, rgba(255,255,255,0) 100%);
+  }
+
+  .brand-card{ padding:18px; margin-bottom:14px; }
+  .eyebrow{
+    font-family:"Inter Tight","Manrope","Helvetica Neue",Arial,sans-serif;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.18em;
+    color:var(--text-soft);
+    margin-bottom:10px;
+    font-weight:700;
+  }
+  h1, h2, .head-title, .metric-value, .layer-name{
+    font-family:"Inter Tight","Manrope","Helvetica Neue",Arial,sans-serif;
+    letter-spacing:-.02em;
+  }
+  h1{
+    margin:0 0 8px;
+    font-size:30px;
+    line-height:1.02;
+    font-weight:800;
+  }
+  .intro{
+    margin:0;
+    max-width:28ch;
+    font-size:12px;
+    line-height:1.62;
+    color:var(--text-soft);
+  }
+
+  .section{ padding:14px; margin-top:14px; }
+  .section-title{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin-bottom:10px;
+  }
+  .section-title h2{ margin:0; font-size:15px; }
+  .section-title .meta{ font-size:11px; color:var(--text-soft); }
+  .sub{ margin:0 0 8px; font-size:11px; line-height:1.52; color:var(--text-soft); max-width:36ch; }
+
+  label{ display:block; margin:10px 0 6px; font-size:12px; color:var(--text-soft); }
+  input[type="file"], input[type="number"], select{
+    width:100%;
+    padding:11px 12px;
+    border-radius:18px;
+    border:1px solid rgba(136,156,186,.18);
+    background:rgba(255,255,255,.88);
+    color:var(--text);
+    font-size:13px;
+    outline:none;
+    transition:border-color .2s ease, box-shadow .2s ease, transform .15s ease;
+  }
+  input[type="file"]:focus, input[type="number"]:focus, select:focus{
+    border-color:rgba(59,130,246,.44);
+    box-shadow:0 0 0 4px rgba(59,130,246,.10);
+  }
+  input[type="color"]{
+    width:100%; height:44px;
+    border-radius:18px;
+    border:1px solid rgba(136,156,186,.18);
+    background:rgba(255,255,255,.88);
+    padding:6px;
+  }
+  input[type="range"]{ width:100%; accent-color:var(--brand); }
+  input[type="checkbox"]{ transform:scale(1.08); accent-color:var(--brand); }
+
+  .row{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .row3{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+  .row5{ display:grid; grid-template-columns:repeat(5,1fr); gap:8px; }
+  .value{ float:right; color:var(--brand); font-weight:700; }
+
+  button{
+    position:relative;
+    overflow:hidden;
+    width:100%;
+    border:none;
+    border-radius:20px;
+    padding:11px 12px;
+    cursor:pointer;
+    font-weight:700;
+    font-size:13px;
+    transition:transform .18s ease, box-shadow .22s ease, filter .22s ease, border-color .22s ease;
+  }
+  button::before{
+    content:"";
+    position:absolute;
+    inset:-40% auto -40% -120%;
+    width:70%;
+    transform:skewX(-20deg);
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.42), rgba(255,255,255,0));
+    transition:left .55s cubic-bezier(.22,1,.36,1);
+  }
+  button:hover::before{ left:145%; }
+  button:hover{ transform:translateY(-1px); }
+  button:active{ transform:translateY(1px); }
+
+  .btn-brand{ background:linear-gradient(180deg, #5ea1ff 0%, #3478f6 100%); color:white; box-shadow:0 14px 28px rgba(52,120,246,.24); }
+  .btn-accent{ background:linear-gradient(180deg, #8e84ff 0%, #6b5ef7 100%); color:white; box-shadow:0 14px 28px rgba(109,94,252,.22); }
+  .btn-soft{
+    background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(247,250,255,.82));
+    color:var(--text);
+    border:1px solid rgba(136,156,186,.18);
+    box-shadow:0 8px 18px rgba(78,100,133,.08);
+  }
+  .btn-danger{ background:linear-gradient(180deg, #ff9ab0 0%, #f06f86 100%); color:white; box-shadow:0 14px 28px rgba(240,111,134,.18); }
+  .tool-btn.active, .pick-btn.active{
+    outline:2px solid rgba(59,130,246,.34);
+    outline-offset:2px;
+    box-shadow:0 14px 28px rgba(52,120,246,.12);
+  }
+
+  .center-stage{
+    display:grid;
+    grid-template-rows:auto auto 1fr;
+    overflow:hidden;
+  }
+
+  .topbar-card{
+    padding:12px 14px;
+    margin-bottom:14px;
+  }
+  .status-line{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .status-text{ font-size:13px; color:var(--text-soft); }
+  .quick-pills{ display:flex; gap:8px; flex-wrap:wrap; }
+  .pill{
+    padding:8px 12px;
+    border-radius:999px;
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(136,156,186,.16);
+    font-size:11px;
+    color:var(--text-soft);
+    box-shadow:var(--shadow-sm);
+  }
+
+  .toolbar{
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+    padding:12px 14px;
+    margin-bottom:14px;
+    border-radius:26px;
+    background:linear-gradient(180deg, rgba(255,255,255,.88), rgba(255,255,255,.72));
+    border:1px solid rgba(255,255,255,.70);
+    box-shadow:var(--shadow-sm);
+  }
+  .toolbar-group{ display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+
+  .canvas-shell{
+    position:relative;
+    min-height:0;
+    border-radius:30px;
+    overflow:hidden;
+    background:
+      radial-gradient(circle at top, rgba(59,130,246,.08), transparent 38%),
+      linear-gradient(180deg, rgba(255,255,255,.88), rgba(247,251,255,.78));
+    border:1px solid rgba(255,255,255,.70);
+    box-shadow:var(--shadow-md);
+  }
+  .canvas-shell::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.18), transparent 16%, transparent 84%, rgba(59,130,246,.05));
+    mix-blend-mode:screen;
+  }
+  canvas#mainCanvas{
+    width:100%;
+    height:100%;
+    display:block;
+    cursor:crosshair;
+  }
+  canvas#mainCanvas.is-pan-ready{ cursor:grab; }
+  canvas#mainCanvas.is-panning{ cursor:grabbing; }
+  canvas#mainCanvas.is-zoom-box{ cursor:zoom-in; }
+
+  .canvas-overlay{
+    position:absolute;
+    left:16px; right:16px; bottom:16px;
+    display:flex; align-items:flex-end; justify-content:space-between; gap:12px;
+    pointer-events:none;
+  }
+  .overlay-group{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+  }
+  .glass-pill{
+    pointer-events:auto;
+    padding:10px 12px;
+    border-radius:18px;
+    background:rgba(255,255,255,.72);
+    border:1px solid rgba(255,255,255,.82);
+    box-shadow:var(--shadow-sm);
+    font-size:12px;
+    color:var(--text-soft);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+  }
+
+  .zoom-box{
+    position:absolute;
+    border:1.5px solid rgba(59,130,246,.8);
+    background:rgba(59,130,246,.12);
+    border-radius:8px;
+    pointer-events:none;
+    display:none;
+  }
+
+  .right-rail{ display:grid; gap:14px; align-content:start; }
+  .loupe-card, .mini-card, .info-card, .shortcut-card{ padding:14px; }
+  .card-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:10px; }
+  .card-head .title{ font-size:14px; font-weight:800; letter-spacing:-.02em; font-family:"Inter Tight","Manrope","Helvetica Neue",Arial,sans-serif; }
+  .card-head .mini{ font-size:11px; color:var(--text-soft); }
+
+  .loupe-wrap, .mini-wrap{
+    position:relative;
+    width:100%;
+    aspect-ratio:1 / 1;
+    border-radius:24px;
+    overflow:hidden;
+    border:1px solid rgba(136,156,186,.18);
+    background:
+      radial-gradient(circle at center, rgba(59,130,246,.08), transparent 56%),
+      linear-gradient(180deg, rgba(255,255,255,.96), rgba(246,250,255,.90));
+  }
+  canvas#loupeCanvas, canvas#minimapCanvas{
+    width:100%; height:100%; display:block;
+  }
+
+  .metric-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .metric{
+    padding:12px;
+    border-radius:20px;
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(136,156,186,.16);
+    box-shadow:var(--shadow-sm);
+  }
+  .metric-label{ font-size:11px; color:var(--text-soft); margin-bottom:5px; }
+  .metric-value{ font-size:13px; font-weight:800; word-break:break-all; }
+  .mono{ font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+
+  .nudge-pad{
+    display:grid;
+    grid-template-columns:58px 58px 58px;
+    grid-template-rows:58px 58px 58px;
+    gap:8px;
+    justify-content:center;
+    margin-top:10px;
+  }
+  .nudge-pad button{ padding:0; font-size:20px; border-radius:22px; }
+
+  .shortcut-list{
+    display:grid; gap:8px;
+  }
+  .shortcut{
+    display:flex; align-items:center; justify-content:space-between; gap:10px;
+    padding:10px 12px;
+    border-radius:18px;
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(136,156,186,.16);
+  }
+  .shortcut .label{ font-size:12px; color:var(--text-soft); }
+  .kbd{
+    padding:6px 8px;
+    border-radius:12px;
+    background:linear-gradient(180deg, rgba(255,255,255,.96), rgba(241,246,255,.90));
+    border:1px solid rgba(136,156,186,.18);
+    font-size:11px;
+    font-weight:800;
+    color:var(--text);
+    box-shadow:0 4px 12px rgba(78,100,133,.08);
+  }
+
+  .layer-list{ display:grid; gap:10px; }
+  .layer-card{
+    padding:12px;
+    border-radius:22px;
+    background:rgba(255,255,255,.86);
+    border:1px solid rgba(136,156,186,.16);
+    box-shadow:var(--shadow-sm);
+  }
+  .layer-top{
+    display:grid; grid-template-columns:auto 1fr auto auto; gap:10px; align-items:center;
+    margin-bottom:10px;
+  }
+  .layer-color{
+    width:16px; height:16px; border-radius:999px; box-shadow:0 0 0 2px rgba(255,255,255,.8), 0 0 0 3px rgba(136,156,186,.16);
+  }
+  .layer-name{
+    font-size:13px; font-weight:800; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .layer-actions{
+    display:flex; gap:8px; align-items:center;
+  }
+  .mini-btn{
+    width:34px; height:34px; padding:0; border-radius:16px;
+  }
+
+  .point-item{
+    display:grid; grid-template-columns:1fr auto; gap:10px; align-items:center;
+    padding:11px 12px;
+    border-radius:20px;
+    background:rgba(255,255,255,.88);
+    border:1px solid rgba(136,156,186,.16);
+    box-shadow:var(--shadow-sm);
+  }
+  .point-name{ font-family:"Inter Tight","Manrope","Helvetica Neue",Arial,sans-serif; font-weight:800; font-size:13px; }
+  .point-state{ font-size:11px; color:var(--text-soft); margin-top:4px; }
+
+  .fade-up{ animation:fadeUp .7s cubic-bezier(.22,1,.36,1) both; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(10px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  @media (max-width: 1440px){
+    .app{ grid-template-columns:340px minmax(0,1fr) 320px; }
+  }
+  @media (max-width: 1200px){
+    body{ overflow:auto; }
+    .app{
+      height:auto;
+      grid-template-columns:1fr;
+    }
+    .left-rail, .right-rail, .center-stage{ min-height:auto; }
+    .canvas-shell{ min-height:620px; }
+  }
+</style>
+</head>
+<body>
+<div class="orb a"></div>
+<div class="orb b"></div>
+<div class="orb c"></div>
+
+<div class="app">
+  <aside class="left-rail glass fade-up">
+    <section class="brand-card">
+      <div class="eyebrow">precision overlay workspace</div>
+      <h1>Overlay Studio</h1>
+      <p class="intro">Calibrate once. Review with clarity. Built for image-aligned CSV overlays, precise point placement, and frictionless iteration.</p>
+    </section>
+
+    <section class="section fade-up">
+      <div class="section-title">
+        <h2>Files</h2>
+        <div class="meta" id="autosaveState">Autosave off</div>
+      </div>
+      <p class="sub">Use a single cropped panel for the cleanest result.</p>
+
+      <label>Figure Image</label>
+      <input id="imgInput" type="file" accept="image/*" />
+
+      <label>CSV Layers</label>
+      <input id="csvInput" type="file" accept=".csv,text/csv" multiple />
+
+      <div style="margin-top:12px;">
+        <div class="section-title" style="margin-bottom:8px;">
+          <h2 style="font-size:13px;">Layers</h2>
+          <div class="meta" id="layerCount">0</div>
+        </div>
+        <div class="layer-list" id="layerList"></div>
+      </div>
+    </section>
+
+    <section class="section fade-up">
+      <div class="section-title">
+        <h2>Align</h2>
+        <div class="meta">Order: O → X1 → X2 → Y1 → Y2</div>
+      </div>
+
+      <div class="row5">
+        <button id="pickOriginBtn" class="btn-soft pick-btn">O</button>
+        <button id="pickX1Btn" class="btn-soft pick-btn">X1</button>
+        <button id="pickX2Btn" class="btn-soft pick-btn">X2</button>
+        <button id="pickY1Btn" class="btn-soft pick-btn">Y1</button>
+        <button id="pickY2Btn" class="btn-soft pick-btn">Y2</button>
+      </div>
+
+      <div style="display:grid; gap:8px; margin-top:10px;">
+        <div class="point-item">
+          <div><div class="point-name">Origin</div><div class="point-state" id="originState">Not set</div></div>
+          <button id="clearOriginBtn" class="btn-soft mini-btn">×</button>
+        </div>
+        <div class="point-item">
+          <div><div class="point-name">X1</div><div class="point-state" id="x1State">Not set</div></div>
+          <button id="clearX1Btn" class="btn-soft mini-btn">×</button>
+        </div>
+        <div class="point-item">
+          <div><div class="point-name">X2</div><div class="point-state" id="x2State">Not set</div></div>
+          <button id="clearX2Btn" class="btn-soft mini-btn">×</button>
+        </div>
+        <div class="point-item">
+          <div><div class="point-name">Y1</div><div class="point-state" id="y1State">Not set</div></div>
+          <button id="clearY1Btn" class="btn-soft mini-btn">×</button>
+        </div>
+        <div class="point-item">
+          <div><div class="point-name">Y2</div><div class="point-state" id="y2State">Not set</div></div>
+          <button id="clearY2Btn" class="btn-soft mini-btn">×</button>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <div>
+          <label>X1 Value</label>
+          <input id="x1Val" type="number" step="any" value="0.2" />
+        </div>
+        <div>
+          <label>X2 Value</label>
+          <input id="x2Val" type="number" step="any" value="0.8" />
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Y1 Value</label>
+          <input id="y1Val" type="number" step="any" value="1" />
+        </div>
+        <div>
+          <label>Y2 Value</label>
+          <input id="y2Val" type="number" step="any" value="2" />
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:10px;">
+        <button id="buildCalBtn" class="btn-brand">Build Axis</button>
+        <button id="clearAllCalBtn" class="btn-danger">Reset</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="undoBtn" class="btn-soft">Undo</button>
+        <button id="redoBtn" class="btn-soft">Redo</button>
+      </div>
+
+      <p class="sub" id="calibrationSummary" style="margin-top:10px;">Axis not built.</p>
+    </section>
+
+    <section class="section fade-up">
+      <div class="section-title">
+        <h2>Style</h2>
+        <div class="meta">Live</div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Detail Zoom <span class="value" id="loupeZoomVal">12×</span></label>
+          <input id="loupeZoom" type="range" min="4" max="24" step="1" value="12" />
+        </div>
+        <div>
+          <label>Image <span class="value" id="imgAlphaVal">1.00</span></label>
+          <input id="imgAlpha" type="range" min="0.25" max="1" step="0.01" value="1" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Line <span class="value" id="lineAlphaVal">0.92</span></label>
+          <input id="lineAlpha" type="range" min="0" max="1" step="0.01" value="0.92" />
+        </div>
+        <div>
+          <label>Points <span class="value" id="pointAlphaVal">0.88</span></label>
+          <input id="pointAlpha" type="range" min="0" max="1" step="0.01" value="0.88" />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label>Stroke <span class="value" id="lineWidthVal">2</span></label>
+          <input id="lineWidth" type="range" min="1" max="10" step="1" value="2" />
+        </div>
+        <div>
+          <label>Radius <span class="value" id="pointRadiusVal">3</span></label>
+          <input id="pointRadius" type="range" min="1" max="12" step="1" value="3" />
+        </div>
+      </div>
+
+      <div class="row3">
+        <div>
+          <label>Marks</label>
+          <select id="showMarks">
+            <option value="on" selected>On</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <div>
+          <label>Guides</label>
+          <select id="showGuides">
+            <option value="on" selected>On</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <div>
+          <label>Grid</label>
+          <select id="showGrid">
+            <option value="off" selected>Off</option>
+            <option value="on">On</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row3">
+        <div>
+          <label>Loupe</label>
+          <select id="showLoupe">
+            <option value="on" selected>On</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <div>
+          <label>Mini Map</label>
+          <select id="showMiniMap">
+            <option value="on" selected>On</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+        <div>
+          <label>Guided Tooltips</label>
+          <select id="showHints">
+            <option value="on" selected>On</option>
+            <option value="off">Off</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <section class="section fade-up">
+      <div class="section-title">
+        <h2>Session</h2>
+        <div class="meta">Portable</div>
+      </div>
+      <div class="row">
+        <button id="savePngBtn" class="btn-brand">Export PNG</button>
+        <button id="saveSessionBtn" class="btn-accent">Save JSON</button>
+      </div>
+      <div class="row" style="margin-top:8px;">
+        <button id="restoreAutoBtn" class="btn-soft">Restore Autosave</button>
+        <button id="clearSessionBtn" class="btn-soft">Clear All</button>
+      </div>
+      <label>Open Session</label>
+      <input id="loadSessionInput" type="file" accept=".json,application/json" />
+    </section>
+  </aside>
+
+  <main class="center-stage glass fade-up">
+    <div class="topbar-card">
+      <div class="status-line">
+        <div class="status-text" id="status">Load an image and one or more CSV files to begin.</div>
+        <div class="quick-pills">
+          <div class="pill">Wheel Zoom</div>
+          <div class="pill">Space + Drag Pan</div>
+          <div class="pill">Arrow Keys Nudge</div>
+          <div class="pill">Double Click Fit</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-group">
+        <button id="toolSelectBtn" class="btn-soft tool-btn active">Select</button>
+        <button id="toolZoomBoxBtn" class="btn-soft tool-btn">Box Zoom</button>
+        <button id="toolHandBtn" class="btn-soft tool-btn">Hand</button>
+      </div>
+      <div class="toolbar-group">
+        <button id="fitViewBtn" class="btn-soft">Fit</button>
+        <button id="actualViewBtn" class="btn-soft">100%</button>
+        <button id="resetViewBtn" class="btn-soft">Reset View</button>
+        <div class="pill" id="cursorStatus">Cursor: —</div>
+      </div>
+    </div>
+
+    <div class="canvas-shell">
+      <canvas id="mainCanvas"></canvas>
+      <div id="zoomBox" class="zoom-box"></div>
+
+      <div class="canvas-overlay">
+        <div class="overlay-group">
+          <div class="glass-pill" id="activePointBadge">Point · None</div>
+          <div class="glass-pill" id="viewBadge">View · 100%</div>
+          <div class="glass-pill" id="pointCountBadge">Layers · 0</div>
+        </div>
+        <div class="overlay-group">
+          <div class="glass-pill" id="hintPill">Canvas, detail view, and controls stay in view.</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="right-rail glass fade-up">
+    <section class="loupe-card">
+      <div class="card-head">
+        <div class="title">Detail</div>
+        <div class="mini">Live zoom</div>
+      </div>
+      <div class="loupe-wrap">
+        <canvas id="loupeCanvas" width="320" height="320"></canvas>
+      </div>
+    </section>
+
+    <section class="mini-card" id="miniMapCard">
+      <div class="card-head">
+        <div class="title">Mini Map</div>
+        <div class="mini">Viewport</div>
+      </div>
+      <div class="mini-wrap">
+        <canvas id="minimapCanvas" width="320" height="320"></canvas>
+      </div>
+    </section>
+
+    <section class="info-card">
+      <div class="card-head">
+        <div class="title">Inspector</div>
+        <div class="mini">Live state</div>
+      </div>
+
+      <div class="metric-grid">
+        <div class="metric">
+          <div class="metric-label">Selected Point</div>
+          <div class="metric-value" id="selectedPointName">None</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Pixel Position</div>
+          <div class="metric-value mono" id="selectedPointPos">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Cursor</div>
+          <div class="metric-value mono" id="mousePos">—</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Mode</div>
+          <div class="metric-value" id="pickModeInfo">Browse</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Layer</div>
+          <div class="metric-value" id="selectedLayerName">None</div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Visible Layers</div>
+          <div class="metric-value" id="visibleLayerCount">0</div>
+        </div>
+      </div>
+
+      <div class="row" style="margin-top:12px;">
+        <div>
+          <label>Step</label>
+          <input id="nudgeStep" type="number" min="1" step="1" value="1" />
+        </div>
+        <div>
+          <label>Fast</label>
+          <input id="nudgeFastStep" type="number" min="1" step="1" value="10" />
+        </div>
+      </div>
+
+      <div class="nudge-pad">
+        <div></div>
+        <button id="nudgeUpBtn" class="btn-soft">↑</button>
+        <div></div>
+        <button id="nudgeLeftBtn" class="btn-soft">←</button>
+        <button id="nudgeCenterBtn" class="btn-soft">◎</button>
+        <button id="nudgeRightBtn" class="btn-soft">→</button>
+        <div></div>
+        <button id="nudgeDownBtn" class="btn-soft">↓</button>
+        <div></div>
+      </div>
+    </section>
+
+    <section class="shortcut-card">
+      <div class="card-head">
+        <div class="title">Shortcuts</div>
+        <div class="mini">Fast flow</div>
+      </div>
+      <div class="shortcut-list">
+        <div class="shortcut"><span class="label">Zoom</span><span class="kbd">Wheel</span></div>
+        <div class="shortcut"><span class="label">Pan</span><span class="kbd">Space + Drag</span></div>
+        <div class="shortcut"><span class="label">Fit View</span><span class="kbd">Double Click</span></div>
+        <div class="shortcut"><span class="label">Nudge</span><span class="kbd">← ↑ → ↓</span></div>
+        <div class="shortcut"><span class="label">Fast Nudge</span><span class="kbd">Shift + Arrows</span></div>
+        <div class="shortcut"><span class="label">Undo / Redo</span><span class="kbd">⌘/Ctrl + Z / Shift + Z</span></div>
+        <div class="shortcut"><span class="label">Clear Pick Mode</span><span class="kbd">Esc</span></div>
+      </div>
+    </section>
+  </aside>
+</div>
+
+<script>
+document.addEventListener('pointermove', (e) => {
+  const x = (e.clientX / window.innerWidth) * 100;
+  const y = (e.clientY / window.innerHeight) * 100;
+  document.documentElement.style.setProperty('--mx', `${x}%`);
+  document.documentElement.style.setProperty('--my', `${y}%`);
+});
+
+const PALETTE = ['#ff7a8a','#3478f6','#29c7ac','#8d7bff','#f4a261','#14b8a6','#e66f51','#22c55e','#0ea5e9','#d946ef'];
+
+const state = {
+  image: null,
+  imageName: "",
+  imageDataUrl: null,
+  layers: [],
+  activeLayerId: null,
+  picking: null,
+  selectedPoint: null,
+  marks: { origin:null, x1:null, x2:null, y1:null, y2:null },
+  calibration: null,
+  mouseImage: null,
+  hoverCanvas: null,
+  tool: 'select',
+  view: {
+    scale: 1,
+    panX: 0,
+    panY: 0,
+    isPanning: false,
+    spaceKey: false,
+    dragMoved: false,
+    startX: 0,
+    startY: 0,
+    startPanX: 0,
+    startPanY: 0,
+    boxZooming: false,
+    boxStartX: 0,
+    boxStartY: 0,
+    boxX: 0,
+    boxY: 0,
+    boxW: 0,
+    boxH: 0
+  },
+  history: [],
+  future: []
+};
+
+const els = {
+  mainCanvas: document.getElementById('mainCanvas'),
+  loupeCanvas: document.getElementById('loupeCanvas'),
+  minimapCanvas: document.getElementById('minimapCanvas'),
+  zoomBox: document.getElementById('zoomBox'),
+  imgInput: document.getElementById('imgInput'),
+  csvInput: document.getElementById('csvInput'),
+  loadSessionInput: document.getElementById('loadSessionInput'),
+  layerList: document.getElementById('layerList'),
+  layerCount: document.getElementById('layerCount'),
+  autosaveState: document.getElementById('autosaveState'),
+  x1Val: document.getElementById('x1Val'),
+  x2Val: document.getElementById('x2Val'),
+  y1Val: document.getElementById('y1Val'),
+  y2Val: document.getElementById('y2Val'),
+  calibrationSummary: document.getElementById('calibrationSummary'),
+  status: document.getElementById('status'),
+  cursorStatus: document.getElementById('cursorStatus'),
+  activePointBadge: document.getElementById('activePointBadge'),
+  viewBadge: document.getElementById('viewBadge'),
+  pointCountBadge: document.getElementById('pointCountBadge'),
+  hintPill: document.getElementById('hintPill'),
+  selectedPointName: document.getElementById('selectedPointName'),
+  selectedPointPos: document.getElementById('selectedPointPos'),
+  mousePos: document.getElementById('mousePos'),
+  pickModeInfo: document.getElementById('pickModeInfo'),
+  selectedLayerName: document.getElementById('selectedLayerName'),
+  visibleLayerCount: document.getElementById('visibleLayerCount'),
+  loupeZoom: document.getElementById('loupeZoom'),
+  imgAlpha: document.getElementById('imgAlpha'),
+  lineAlpha: document.getElementById('lineAlpha'),
+  pointAlpha: document.getElementById('pointAlpha'),
+  lineWidth: document.getElementById('lineWidth'),
+  pointRadius: document.getElementById('pointRadius'),
+  showMarks: document.getElementById('showMarks'),
+  showGuides: document.getElementById('showGuides'),
+  showGrid: document.getElementById('showGrid'),
+  showLoupe: document.getElementById('showLoupe'),
+  showMiniMap: document.getElementById('showMiniMap'),
+  showHints: document.getElementById('showHints'),
+  nudgeStep: document.getElementById('nudgeStep'),
+  nudgeFastStep: document.getElementById('nudgeFastStep'),
+  pickOriginBtn: document.getElementById('pickOriginBtn'),
+  pickX1Btn: document.getElementById('pickX1Btn'),
+  pickX2Btn: document.getElementById('pickX2Btn'),
+  pickY1Btn: document.getElementById('pickY1Btn'),
+  pickY2Btn: document.getElementById('pickY2Btn'),
+  clearOriginBtn: document.getElementById('clearOriginBtn'),
+  clearX1Btn: document.getElementById('clearX1Btn'),
+  clearX2Btn: document.getElementById('clearX2Btn'),
+  clearY1Btn: document.getElementById('clearY1Btn'),
+  clearY2Btn: document.getElementById('clearY2Btn'),
+  buildCalBtn: document.getElementById('buildCalBtn'),
+  clearAllCalBtn: document.getElementById('clearAllCalBtn'),
+  undoBtn: document.getElementById('undoBtn'),
+  redoBtn: document.getElementById('redoBtn'),
+  toolSelectBtn: document.getElementById('toolSelectBtn'),
+  toolZoomBoxBtn: document.getElementById('toolZoomBoxBtn'),
+  toolHandBtn: document.getElementById('toolHandBtn'),
+  fitViewBtn: document.getElementById('fitViewBtn'),
+  actualViewBtn: document.getElementById('actualViewBtn'),
+  resetViewBtn: document.getElementById('resetViewBtn'),
+  savePngBtn: document.getElementById('savePngBtn'),
+  saveSessionBtn: document.getElementById('saveSessionBtn'),
+  restoreAutoBtn: document.getElementById('restoreAutoBtn'),
+  clearSessionBtn: document.getElementById('clearSessionBtn'),
+  miniMapCard: document.getElementById('miniMapCard'),
+  nudgeUpBtn: document.getElementById('nudgeUpBtn'),
+  nudgeDownBtn: document.getElementById('nudgeDownBtn'),
+  nudgeLeftBtn: document.getElementById('nudgeLeftBtn'),
+  nudgeRightBtn: document.getElementById('nudgeRightBtn'),
+  nudgeCenterBtn: document.getElementById('nudgeCenterBtn'),
+};
+
+const pointStateEls = {
+  origin: document.getElementById('originState'),
+  x1: document.getElementById('x1State'),
+  x2: document.getElementById('x2State'),
+  y1: document.getElementById('y1State'),
+  y2: document.getElementById('y2State'),
+};
+
+const valueEls = {
+  loupeZoomVal: document.getElementById('loupeZoomVal'),
+  imgAlphaVal: document.getElementById('imgAlphaVal'),
+  lineAlphaVal: document.getElementById('lineAlphaVal'),
+  pointAlphaVal: document.getElementById('pointAlphaVal'),
+  lineWidthVal: document.getElementById('lineWidthVal'),
+  pointRadiusVal: document.getElementById('pointRadiusVal'),
+};
+
+function setStatus(msg){ els.status.textContent = msg; }
+function pointLabel(key){ return { origin:'Origin', x1:'X1', x2:'X2', y1:'Y1', y2:'Y2' }[key] || key; }
+function hexToRgba(hex, alpha){
+  const h = hex.replace('#','');
+  const n = parseInt(h,16);
+  return `rgba(${(n>>16)&255}, ${(n>>8)&255}, ${n&255}, ${alpha})`;
+}
+function uid(){ return 'id_' + Math.random().toString(36).slice(2,10); }
+function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
+
+function autoDetectDelimiter(text){
+  const lines = text.split(/\r?\n/).filter(x=>x.trim()!=='');
+  if(!lines.length) return ',';
+  const first = lines[0];
+  const counts = {
+    ',': (first.match(/,/g)||[]).length,
+    ';': (first.match(/;/g)||[]).length,
+    '\t': (first.match(/\t/g)||[]).length,
+  };
+  let best=',', bestCount=-1;
+  for (const [k,v] of Object.entries(counts)) if (v > bestCount) { best = k; bestCount = v; }
+  return best;
+}
+
+function parseCsv(text){
+  const delim = autoDetectDelimiter(text);
+  const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+  if(!lines.length) throw new Error('CSV is empty.');
+  const split = line => line.split(delim).map(s => s.trim());
+  return { headers: split(lines[0]), rows: lines.slice(1).map(split), delim };
+}
+
+function autoPickColumns(headers){
+  const lower = headers.map(h => String(h).toLowerCase());
+  const xIdx = lower.findIndex(h => h === 'x' || h.includes('rho') || h === 'r' || h.includes('radius') || h.includes('psi'));
+  const yIdx = lower.findIndex(h => h === 'y' || h.includes('te') || h.includes('ne') || h.includes('ti') || h.includes('density') || h.includes('temp'));
+  return {
+    xCol: headers[xIdx >= 0 ? xIdx : 0],
+    yCol: headers[yIdx >= 0 ? yIdx : Math.min(1, headers.length - 1)]
+  };
+}
+
+function calcLayerPoints(layer){
+  const xi = layer.headers.indexOf(layer.xCol);
+  const yi = layer.headers.indexOf(layer.yCol);
+  if(xi < 0 || yi < 0){ layer.points = []; return; }
+  const pts = [];
+  for(const row of layer.rows){
+    const x = Number(row[xi]), y = Number(row[yi]);
+    if(Number.isFinite(x) && Number.isFinite(y)) pts.push({x,y});
+  }
+  layer.points = pts;
+}
+
+async function loadCsvFiles(files){
+  const loaded = [];
+  for(const file of files){
+    const text = await file.text();
+    const parsed = parseCsv(text);
+    const cols = autoPickColumns(parsed.headers);
+    const layer = {
+      id: uid(),
+      name: file.name,
+      csvText: text,
+      headers: parsed.headers,
+      rows: parsed.rows,
+      delim: parsed.delim,
+      xCol: cols.xCol,
+      yCol: cols.yCol,
+      color: PALETTE[(state.layers.length + loaded.length) % PALETTE.length],
+      visible: true,
+      mode: 'line+points',
+      points: []
+    };
+    calcLayerPoints(layer);
+    loaded.push(layer);
+  }
+  state.layers.push(...loaded);
+  if(!state.activeLayerId && state.layers[0]) state.activeLayerId = state.layers[0].id;
+  pushHistory();
+  renderLayerList();
+  persistAutosave();
+  drawAll();
+  setStatus(`Loaded ${loaded.length} CSV layer${loaded.length > 1 ? 's' : ''}.`);
+}
+
+function renderLayerList(){
+  els.layerList.innerHTML = '';
+  els.layerCount.textContent = String(state.layers.length);
+  els.pointCountBadge.textContent = `Layers · ${state.layers.length}`;
+  const visibleCount = state.layers.filter(l => l.visible).length;
+  els.visibleLayerCount.textContent = String(visibleCount);
+  const activeLayer = state.layers.find(l => l.id === state.activeLayerId);
+  els.selectedLayerName.textContent = activeLayer ? activeLayer.name : 'None';
+
+  state.layers.forEach((layer, idx) => {
+    const card = document.createElement('div');
+    card.className = 'layer-card';
+    card.innerHTML = `
+      <div class="layer-top">
+        <input type="checkbox" ${layer.visible ? 'checked' : ''} data-role="visible">
+        <div class="layer-color" style="background:${layer.color};"></div>
+        <div class="layer-name" title="${layer.name}">${layer.name}</div>
+        <div class="layer-actions">
+          <button class="btn-soft mini-btn" data-role="select" title="Select">${state.activeLayerId === layer.id ? '●' : '○'}</button>
+          <button class="btn-soft mini-btn" data-role="delete" title="Delete">×</button>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label style="margin-top:0;">X</label>
+          <select data-role="xcol">${layer.headers.map(h => `<option value="${h}" ${layer.xCol === h ? 'selected' : ''}>${h}</option>`).join('')}</select>
+        </div>
+        <div>
+          <label style="margin-top:0;">Y</label>
+          <select data-role="ycol">${layer.headers.map(h => `<option value="${h}" ${layer.yCol === h ? 'selected' : ''}>${h}</option>`).join('')}</select>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Color</label>
+          <input type="color" data-role="color" value="${layer.color}">
+        </div>
+        <div>
+          <label>Draw</label>
+          <select data-role="mode">
+            <option value="line+points" ${layer.mode === 'line+points' ? 'selected' : ''}>Line + Points</option>
+            <option value="line" ${layer.mode === 'line' ? 'selected' : ''}>Line</option>
+            <option value="points" ${layer.mode === 'points' ? 'selected' : ''}>Points</option>
+          </select>
+        </div>
+      </div>
+      <div class="sub" style="margin-top:8px;">${layer.points.length} valid points</div>
+    `;
+    els.layerList.appendChild(card);
+
+    card.querySelector('[data-role="visible"]').addEventListener('change', (e) => {
+      layer.visible = e.target.checked;
+      persistAutosave();
+      renderLayerList();
+      drawAll();
+    });
+    card.querySelector('[data-role="select"]').addEventListener('click', () => {
+      state.activeLayerId = layer.id;
+      renderLayerList();
+      drawAll();
+    });
+    card.querySelector('[data-role="delete"]').addEventListener('click', () => {
+      state.layers = state.layers.filter(x => x.id !== layer.id);
+      if(state.activeLayerId === layer.id) state.activeLayerId = state.layers[0]?.id || null;
+      pushHistory();
+      persistAutosave();
+      renderLayerList();
+      drawAll();
+      setStatus('Layer removed.');
+    });
+    card.querySelector('[data-role="xcol"]').addEventListener('change', (e) => {
+      layer.xCol = e.target.value;
+      calcLayerPoints(layer);
+      pushHistory();
+      persistAutosave();
+      renderLayerList();
+      drawAll();
+    });
+    card.querySelector('[data-role="ycol"]').addEventListener('change', (e) => {
+      layer.yCol = e.target.value;
+      calcLayerPoints(layer);
+      pushHistory();
+      persistAutosave();
+      renderLayerList();
+      drawAll();
+    });
+    card.querySelector('[data-role="color"]').addEventListener('input', (e) => {
+      layer.color = e.target.value;
+      persistAutosave();
+      drawAll();
+      renderLayerList();
+    });
+    card.querySelector('[data-role="mode"]').addEventListener('change', (e) => {
+      layer.mode = e.target.value;
+      persistAutosave();
+      drawAll();
+    });
+  });
+}
+
+function saveImageDataUrl(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function loadImageFromDataUrl(url, name='image'){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({img, name, dataUrl:url});
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+async function loadImageFile(file){
+  const dataUrl = await saveImageDataUrl(file);
+  const {img} = await loadImageFromDataUrl(dataUrl, file.name);
+  state.image = img;
+  state.imageName = file.name;
+  state.imageDataUrl = dataUrl;
+  fitView();
+  pushHistory();
+  persistAutosave();
+  drawAll();
+  setStatus(`Loaded image: ${file.name}.`);
+}
+
+function pointStateText(p){ return p ? `(${p.x.toFixed(1)}, ${p.y.toFixed(1)})` : 'Not set'; }
+
+function refreshInspector(){
+  for(const key of Object.keys(pointStateEls)){
+    pointStateEls[key].textContent = pointStateText(state.marks[key]);
+  }
+  const selectedName = state.selectedPoint ? pointLabel(state.selectedPoint) : 'None';
+  els.selectedPointName.textContent = selectedName;
+  els.activePointBadge.textContent = `Point · ${selectedName}`;
+  const p = state.selectedPoint ? state.marks[state.selectedPoint] : null;
+  els.selectedPointPos.textContent = p ? `(${p.x.toFixed(1)}, ${p.y.toFixed(1)})` : '—';
+  els.mousePos.textContent = state.mouseImage ? `(${state.mouseImage.x.toFixed(1)}, ${state.mouseImage.y.toFixed(1)})` : '—';
+  const modeText = state.picking ? `Placing ${pointLabel(state.picking)}` : (state.tool === 'zoom-box' ? 'Box Zoom' : state.tool === 'hand' ? 'Hand' : 'Browse');
+  els.pickModeInfo.textContent = modeText;
+  els.cursorStatus.textContent = state.mouseImage ? `Cursor: (${state.mouseImage.x.toFixed(1)}, ${state.mouseImage.y.toFixed(1)})` : 'Cursor: —';
+  els.viewBadge.textContent = `View · ${(state.view.scale * 100).toFixed(0)}%`;
+  valueEls.loupeZoomVal.textContent = `${els.loupeZoom.value}×`;
+  valueEls.imgAlphaVal.textContent = Number(els.imgAlpha.value).toFixed(2);
+  valueEls.lineAlphaVal.textContent = Number(els.lineAlpha.value).toFixed(2);
+  valueEls.pointAlphaVal.textContent = Number(els.pointAlpha.value).toFixed(2);
+  valueEls.lineWidthVal.textContent = els.lineWidth.value;
+  valueEls.pointRadiusVal.textContent = els.pointRadius.value;
+  els.hintPill.style.display = els.showHints.value === 'on' ? 'block' : 'none';
+  els.miniMapCard.style.display = els.showMiniMap.value === 'on' ? 'block' : 'none';
+  els.loupeCanvas.parentElement.parentElement.style.display = els.showLoupe.value === 'on' ? 'block' : 'none';
+}
+
+function getMainCtx(){ return els.mainCanvas.getContext('2d'); }
+function getLoupeCtx(){ return els.loupeCanvas.getContext('2d'); }
+function getMiniCtx(){ return els.minimapCanvas.getContext('2d'); }
+
+function resizeCanvasElement(canvas){
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = Math.round(rect.width * dpr);
+  canvas.height = Math.round(rect.height * dpr);
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function resizeAllCanvases(){
+  resizeCanvasElement(els.mainCanvas);
+  resizeCanvasElement(els.loupeCanvas);
+  resizeCanvasElement(els.minimapCanvas);
+  drawAll();
+}
+window.addEventListener('resize', resizeAllCanvases);
+
+function getBaseImageRectOnCanvas() {
+  const rect = els.mainCanvas.getBoundingClientRect();
+  const cw = rect.width, ch = rect.height;
+  if (!state.image) return null;
+  const iw = state.image.width, ih = state.image.height;
+  const scale = Math.min(cw / iw, ch / ih);
+  const w = iw * scale, h = ih * scale;
+  const x = (cw - w) / 2, y = (ch - h) / 2;
+  return { x, y, w, h, scale, cw, ch };
+}
+function getImageRectOnCanvas() {
+  const base = getBaseImageRectOnCanvas();
+  if (!base || !state.image) return null;
+  const scale = base.scale * state.view.scale;
+  const w = state.image.width * scale;
+  const h = state.image.height * scale;
+  const x = (base.cw - w) / 2 + state.view.panX;
+  const y = (base.ch - h) / 2 + state.view.panY;
+  return { x, y, w, h, scale, cw: base.cw, ch: base.ch };
+}
+function imageToCanvas(ix, iy){
+  const r = getImageRectOnCanvas();
+  if (!r) return null;
+  return { x: r.x + ix * r.scale, y: r.y + iy * r.scale };
+}
+function canvasToImage(cx, cy){
+  const r = getImageRectOnCanvas();
+  if (!r || !state.image) return null;
+  const ix = (cx - r.x) / r.scale;
+  const iy = (cy - r.y) / r.scale;
+  if (ix < 0 || iy < 0 || ix > state.image.width || iy > state.image.height) return null;
+  return { x: ix, y: iy };
+}
+function fitView(){
+  state.view.scale = 1;
+  state.view.panX = 0;
+  state.view.panY = 0;
+  updateToolCursor();
+  drawAll();
+}
+function actualPixelsView(){
+  const base = getBaseImageRectOnCanvas();
+  if (!base || !base.scale) return;
+  state.view.scale = 1 / base.scale;
+  state.view.panX = 0;
+  state.view.panY = 0;
+  updateToolCursor();
+  drawAll();
+}
+function resetView(){
+  fitView();
+}
+function zoomAtCanvasPoint(factor, cx, cy){
+  const rBefore = getImageRectOnCanvas();
+  if (!rBefore || !state.image) return;
+  const ix = (cx - rBefore.x) / rBefore.scale;
+  const iy = (cy - rBefore.y) / rBefore.scale;
+  const nextScale = clamp(state.view.scale * factor, 0.2, 16);
+  state.view.scale = nextScale;
+  const base = getBaseImageRectOnCanvas();
+  const scale = base.scale * state.view.scale;
+  const w = state.image.width * scale;
+  const h = state.image.height * scale;
+  state.view.panX = cx - ix * scale - (base.cw - w) / 2;
+  state.view.panY = cy - iy * scale - (base.ch - h) / 2;
+  updateToolCursor();
+  drawAll();
+}
+
+function updateToolCursor(){
+  els.mainCanvas.classList.toggle('is-pan-ready', !!state.view.spaceKey || state.tool === 'hand');
+  els.mainCanvas.classList.toggle('is-panning', !!state.view.isPanning);
+  els.mainCanvas.classList.toggle('is-zoom-box', state.tool === 'zoom-box');
+  document.querySelectorAll('.tool-btn').forEach(btn => btn.classList.remove('active'));
+  if(state.tool === 'select') els.toolSelectBtn.classList.add('active');
+  if(state.tool === 'zoom-box') els.toolZoomBoxBtn.classList.add('active');
+  if(state.tool === 'hand') els.toolHandBtn.classList.add('active');
+  document.querySelectorAll('.pick-btn').forEach(btn => btn.classList.remove('active'));
+  if(state.picking){
+    const map = { origin:els.pickOriginBtn, x1:els.pickX1Btn, x2:els.pickX2Btn, y1:els.pickY1Btn, y2:els.pickY2Btn };
+    map[state.picking]?.classList.add('active');
+  }
+}
+
+function drawGrid(ctx,w,h){
+  ctx.save();
+  ctx.strokeStyle='rgba(125,145,176,.14)';
+  ctx.lineWidth=1;
+  for(let i=1;i<10;i++){
+    const x = w * i / 10, y = h * i / 10;
+    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,h); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawMark(ctx, key, p, color, active=false){
+  if(!p) return;
+  const c = imageToCanvas(p.x, p.y);
+  if(!c) return;
+  ctx.save();
+  ctx.shadowColor = 'rgba(255,255,255,.48)';
+  ctx.shadowBlur = 16;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = active ? 2.8 : 2.2;
+  ctx.beginPath(); ctx.arc(c.x, c.y, active ? 7.5 : 6.5, 0, Math.PI * 2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(c.x - 11, c.y); ctx.lineTo(c.x + 11, c.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(c.x, c.y - 11); ctx.lineTo(c.x, c.y + 11); ctx.stroke();
+  ctx.font = '12px "Inter Tight", sans-serif';
+  ctx.fillText(pointLabel(key), c.x + 11, c.y - 11);
+  ctx.restore();
+}
+
+function computeAxisVector(origin, refs){
+  let denom = 0, sx = 0, sy = 0;
+  for(const r of refs){
+    const v = Number(r.v);
+    if(!Number.isFinite(v) || v === 0 || !r.p) continue;
+    const dx = r.p.x - origin.x, dy = r.p.y - origin.y;
+    sx += v * dx;
+    sy += v * dy;
+    denom += v * v;
+  }
+  if(denom === 0) return null;
+  return { x: sx / denom, y: sy / denom };
+}
+function buildCalibration(){
+  const O = state.marks.origin, X1 = state.marks.x1, X2 = state.marks.x2, Y1 = state.marks.y1, Y2 = state.marks.y2;
+  if(!O || !X1 || !X2 || !Y1 || !Y2){
+    alert('Place O, X1, X2, Y1, and Y2 first.');
+    return;
+  }
+  const x1v = Number(els.x1Val.value), x2v = Number(els.x2Val.value);
+  const y1v = Number(els.y1Val.value), y2v = Number(els.y2Val.value);
+  if(![x1v, x2v, y1v, y2v].every(Number.isFinite)){
+    alert('Enter all reference values.');
+    return;
+  }
+  if(x1v === 0 || x2v === 0 || y1v === 0 || y2v === 0){
+    alert('Reference values cannot be zero. The origin is fixed at (0,0).');
+    return;
+  }
+  const ex = computeAxisVector(O, [{p:X1,v:x1v}, {p:X2,v:x2v}]);
+  const ey = computeAxisVector(O, [{p:Y1,v:y1v}, {p:Y2,v:y2v}]);
+  if(!ex || !ey){
+    alert('Axis build failed. Check your points and values.');
+    return;
+  }
+  state.calibration = {
+    method:'origin_x1x2_y1y2_linear',
+    origin:{...O},
+    x_refs:[{pixel:{...X1}, value:x1v}, {pixel:{...X2}, value:x2v}],
+    y_refs:[{pixel:{...Y1}, value:y1v}, {pixel:{...Y2}, value:y2v}],
+    ex, ey
+  };
+  els.calibrationSummary.innerHTML =
+    `Linear axis ready:<br><span class="mono">p = O + ex·x + ey·y</span><br>` +
+    `ex = (${ex.x.toFixed(4)}, ${ex.y.toFixed(4)}) px/unit<br>` +
+    `ey = (${ey.x.toFixed(4)}, ${ey.y.toFixed(4)}) px/unit`;
+  pushHistory();
+  persistAutosave();
+  drawAll();
+  setStatus('Axis built. Layers are now projected onto the figure.');
+}
+
+function projectedPointsForLayer(layer){
+  if(!state.calibration || !layer.points?.length) return [];
+  const { origin, ex, ey } = state.calibration;
+  return layer.points.map(p => ({
+    x: origin.x + ex.x * p.x + ey.x * p.y,
+    y: origin.y + ex.y * p.x + ey.y * p.y
+  }));
+}
+
+function drawProjectedLayers(ctx){
+  const visibleLayers = state.layers.filter(l => l.visible);
+  visibleLayers.forEach(layer => {
+    const projected = projectedPointsForLayer(layer);
+    if(!projected.length) return;
+    const pts = projected.map(p => imageToCanvas(p.x, p.y)).filter(Boolean);
+    if(!pts.length) return;
+    const mode = layer.mode;
+    if(mode === 'line' || mode === 'line+points'){
+      ctx.save();
+      ctx.strokeStyle = hexToRgba(layer.color, Number(els.lineAlpha.value));
+      ctx.lineWidth = Number(els.lineWidth.value);
+      ctx.shadowColor = 'rgba(255,255,255,.18)';
+      ctx.shadowBlur = 18;
+      ctx.beginPath();
+      pts.forEach((p,i)=> i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+      ctx.stroke();
+      ctx.restore();
+    }
+    if(mode === 'points' || mode === 'line+points'){
+      ctx.save();
+      ctx.fillStyle = hexToRgba(layer.color, Number(els.pointAlpha.value));
+      const r = Number(els.pointRadius.value);
+      pts.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+  });
+}
+
+function drawGuides(ctx){
+  if(els.showGuides.value !== 'on' || !state.marks.origin) return;
+  const colors = { x:'rgba(59,130,246,.38)', y:'rgba(109,94,252,.34)' };
+  ['x1','x2','y1','y2'].forEach(key => {
+    if(!state.marks[key]) return;
+    const a = imageToCanvas(state.marks.origin.x, state.marks.origin.y);
+    const b = imageToCanvas(state.marks[key].x, state.marks[key].y);
+    ctx.save();
+    ctx.strokeStyle = key.startsWith('x') ? colors.x : colors.y;
+    ctx.lineWidth = 1.6;
+    ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y); ctx.stroke();
+    ctx.restore();
+  });
+}
+function drawAxisUnitVectors(ctx){
+  if(!state.calibration || els.showGuides.value !== 'on') return;
+  const O = imageToCanvas(state.calibration.origin.x, state.calibration.origin.y);
+  if(!O) return;
+  const exEnd = imageToCanvas(state.calibration.origin.x + state.calibration.ex.x, state.calibration.origin.y + state.calibration.ex.y);
+  const eyEnd = imageToCanvas(state.calibration.origin.x + state.calibration.ey.x, state.calibration.origin.y + state.calibration.ey.y);
+  ctx.save();
+  ctx.lineWidth = 2;
+  if(exEnd){
+    ctx.strokeStyle='rgba(59,130,246,.92)';
+    ctx.beginPath(); ctx.moveTo(O.x,O.y); ctx.lineTo(exEnd.x,exEnd.y); ctx.stroke();
+  }
+  if(eyEnd){
+    ctx.strokeStyle='rgba(109,94,252,.92)';
+    ctx.beginPath(); ctx.moveTo(O.x,O.y); ctx.lineTo(eyEnd.x,eyEnd.y); ctx.stroke();
+  }
+  ctx.restore();
+}
+
+function drawMainCanvas(){
+  const ctx = getMainCtx();
+  const rect = els.mainCanvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#f7fbff';
+  ctx.fillRect(0,0,w,h);
+
+  if(els.showGrid.value === 'on') drawGrid(ctx,w,h);
+
+  if(state.image){
+    const r = getImageRectOnCanvas();
+    ctx.save();
+    ctx.globalAlpha = Number(els.imgAlpha.value);
+    ctx.drawImage(state.image, r.x, r.y, r.w, r.h);
+    ctx.restore();
+  }
+
+  drawProjectedLayers(ctx);
+  drawGuides(ctx);
+  drawAxisUnitVectors(ctx);
+
+  if(els.showMarks.value === 'on'){
+    const colors = { origin:'#22c55e', x1:'#3478f6', x2:'#60a5fa', y1:'#8d7bff', y2:'#c084fc' };
+    Object.entries(colors).forEach(([key,color]) => drawMark(ctx, key, state.marks[key], color, state.selectedPoint === key));
+  }
+}
+
+function drawLoupe(){
+  const ctx = getLoupeCtx();
+  const rect = els.loupeCanvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#f4f9ff';
+  ctx.fillRect(0,0,w,h);
+
+  if(els.showLoupe.value !== 'on'){
+    ctx.fillStyle = '#7a8eae';
+    ctx.font = '14px Manrope';
+    ctx.fillText('Loupe hidden', w/2 - 40, h/2);
+    return;
+  }
+
+  if(!state.image){
+    ctx.fillStyle = '#7a8eae';
+    ctx.font = '14px Manrope';
+    ctx.fillText('Load an image first', w/2 - 54, h/2);
+    return;
+  }
+
+  const focusPoint = (state.selectedPoint && state.marks[state.selectedPoint]) ? state.marks[state.selectedPoint] : state.mouseImage;
+  if(!focusPoint){
+    ctx.fillStyle = '#7a8eae';
+    ctx.font = '14px Manrope';
+    ctx.fillText('Move the cursor or select a point', w/2 - 106, h/2);
+    return;
+  }
+
+  const zoom = Number(els.loupeZoom.value);
+  const srcW = w / zoom;
+  const srcH = h / zoom;
+  let sx = focusPoint.x - srcW / 2;
+  let sy = focusPoint.y - srcH / 2;
+  sx = clamp(sx, 0, state.image.width - srcW);
+  sy = clamp(sy, 0, state.image.height - srcH);
+
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(state.image, sx, sy, srcW, srcH, 0, 0, w, h);
+
+  // project layers inside loupe
+  state.layers.filter(l => l.visible).forEach(layer => {
+    const projected = projectedPointsForLayer(layer)
+      .filter(p => p.x >= sx - 3 && p.x <= sx + srcW + 3 && p.y >= sy - 3 && p.y <= sy + srcH + 3)
+      .map(p => ({ x:(p.x - sx) / srcW * w, y:(p.y - sy) / srcH * h }));
+    if(!projected.length) return;
+
+    if(layer.mode === 'line' || layer.mode === 'line+points'){
+      ctx.save();
+      ctx.strokeStyle = hexToRgba(layer.color, Number(els.lineAlpha.value));
+      ctx.lineWidth = Math.max(1.2, Number(els.lineWidth.value));
+      ctx.beginPath();
+      projected.forEach((p,i)=> i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+      ctx.stroke();
+      ctx.restore();
+    }
+    if(layer.mode === 'points' || layer.mode === 'line+points'){
+      ctx.save();
+      ctx.fillStyle = hexToRgba(layer.color, Number(els.pointAlpha.value));
+      const r = Math.max(2, Number(els.pointRadius.value));
+      projected.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x,p.y,r,0,Math.PI*2);
+        ctx.fill();
+      });
+      ctx.restore();
+    }
+  });
+
+  // marks
+  if(els.showMarks.value === 'on'){
+    const colors = { origin:'#22c55e', x1:'#3478f6', x2:'#60a5fa', y1:'#8d7bff', y2:'#c084fc' };
+    for(const [key, p] of Object.entries(state.marks)){
+      if(!p) continue;
+      const x = (p.x - sx) / srcW * w;
+      const y = (p.y - sy) / srcH * h;
+      if(x < -20 || x > w + 20 || y < -20 || y > h + 20) continue;
+      ctx.save();
+      ctx.strokeStyle = colors[key];
+      ctx.lineWidth = state.selectedPoint === key ? 2.8 : 2.2;
+      ctx.beginPath(); ctx.arc(x, y, state.selectedPoint === key ? 7 : 6, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x - 10, y); ctx.lineTo(x + 10, y); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y - 10); ctx.lineTo(x, y + 10); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(15,23,40,.52)';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(w/2, 0); ctx.lineTo(w/2, h); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, h/2); ctx.lineTo(w, h/2); ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.strokeStyle = 'rgba(125,145,176,.30)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1,1,w-2,h-2);
+  ctx.restore();
+}
+
+function drawMiniMap(){
+  const ctx = getMiniCtx();
+  const rect = els.minimapCanvas.getBoundingClientRect();
+  const w = rect.width, h = rect.height;
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = '#f4f9ff';
+  ctx.fillRect(0,0,w,h);
+
+  if(els.showMiniMap.value !== 'on'){
+    ctx.fillStyle = '#7a8eae';
+    ctx.font = '14px Manrope';
+    ctx.fillText('Mini map hidden', w/2 - 46, h/2);
+    return;
+  }
+  if(!state.image){
+    ctx.fillStyle = '#7a8eae';
+    ctx.font = '14px Manrope';
+    ctx.fillText('Load an image first', w/2 - 54, h/2);
+    return;
+  }
+
+  const scale = Math.min(w / state.image.width, h / state.image.height);
+  const drawW = state.image.width * scale;
+  const drawH = state.image.height * scale;
+  const x = (w - drawW) / 2;
+  const y = (h - drawH) / 2;
+  ctx.drawImage(state.image, x, y, drawW, drawH);
+
+  // draw projected layers
+  state.layers.filter(l => l.visible).forEach(layer => {
+    const projected = projectedPointsForLayer(layer);
+    if(!projected.length) return;
+    const pts = projected.map(p => ({ x:x + p.x * scale, y:y + p.y * scale }));
+    if(layer.mode === 'line' || layer.mode === 'line+points'){
+      ctx.save();
+      ctx.strokeStyle = hexToRgba(layer.color, .8);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath();
+      pts.forEach((p,i)=> i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+      ctx.stroke();
+      ctx.restore();
+    }
+  });
+
+  // viewport rect
+  const mainRect = els.mainCanvas.getBoundingClientRect();
+  const p1 = canvasToImage(0, 0);
+  const p2 = canvasToImage(mainRect.width, mainRect.height);
+  if(p1 && p2){
+    const vx = x + clamp(p1.x,0,state.image.width) * scale;
+    const vy = y + clamp(p1.y,0,state.image.height) * scale;
+    const vw = (clamp(p2.x,0,state.image.width) - clamp(p1.x,0,state.image.width)) * scale;
+    const vh = (clamp(p2.y,0,state.image.height) - clamp(p1.y,0,state.image.height)) * scale;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(59,130,246,.92)';
+    ctx.lineWidth = 1.6;
+    ctx.fillStyle = 'rgba(59,130,246,.10)';
+    ctx.fillRect(vx,vy,vw,vh);
+    ctx.strokeRect(vx,vy,vw,vh);
+    ctx.restore();
+  }
+
+  // border
+  ctx.save();
+  ctx.strokeStyle = 'rgba(125,145,176,.30)';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1,1,w-2,h-2);
+  ctx.restore();
+}
+
+function updateZoomBox(){
+  if(!state.view.boxZooming){
+    els.zoomBox.style.display = 'none';
+    return;
+  }
+  const x = Math.min(state.view.boxStartX, state.view.boxX);
+  const y = Math.min(state.view.boxStartY, state.view.boxY);
+  const w = Math.abs(state.view.boxX - state.view.boxStartX);
+  const h = Math.abs(state.view.boxY - state.view.boxStartY);
+  els.zoomBox.style.display = 'block';
+  els.zoomBox.style.left = `${x}px`;
+  els.zoomBox.style.top = `${y}px`;
+  els.zoomBox.style.width = `${w}px`;
+  els.zoomBox.style.height = `${h}px`;
+}
+
+function drawAll(){
+  drawMainCanvas();
+  drawLoupe();
+  drawMiniMap();
+  updateZoomBox();
+  refreshInspector();
+}
+
+function updateAutosaveState(msg='Autosave on'){
+  els.autosaveState.textContent = msg;
+}
+
+function setTool(tool){
+  state.tool = tool;
+  updateToolCursor();
+  drawAll();
+}
+function setPicking(pointKey){
+  state.picking = pointKey;
+  state.selectedPoint = pointKey;
+  updateToolCursor();
+  setStatus(`Click ${pointLabel(pointKey)} on the figure.`);
+  drawAll();
+}
+function clearPickMode(){
+  state.picking = null;
+  updateToolCursor();
+  drawAll();
+}
+function selectPoint(key){
+  state.selectedPoint = key;
+  drawAll();
+}
+function clearPoint(key){
+  state.marks[key] = null;
+  if(state.selectedPoint === key) state.selectedPoint = null;
+  if(state.picking === key) clearPickMode();
+  state.calibration = null;
+  els.calibrationSummary.textContent = 'Axis changed. Build it again.';
+  pushHistory();
+  persistAutosave();
+  drawAll();
+}
+function nudgeSelected(dx, dy){
+  if(!state.selectedPoint || !state.image) return;
+  const p = state.marks[state.selectedPoint];
+  if(!p) return;
+  p.x = clamp(p.x + dx, 0, state.image.width);
+  p.y = clamp(p.y + dy, 0, state.image.height);
+  state.calibration = null;
+  els.calibrationSummary.textContent = 'Axis changed. Build it again.';
+  persistAutosave();
+  drawAll();
+}
+
+function pushHistory(){
+  const snapshot = JSON.stringify({
+    marks: state.marks,
+    calibration: state.calibration,
+    layers: state.layers.map(l => ({
+      id:l.id,name:l.name,csvText:l.csvText,headers:l.headers,rows:l.rows,delim:l.delim,xCol:l.xCol,yCol:l.yCol,color:l.color,visible:l.visible,mode:l.mode
+    })),
+    activeLayerId: state.activeLayerId,
+    imageDataUrl: state.imageDataUrl,
+    imageName: state.imageName,
+    view: { scale: state.view.scale, panX: state.view.panX, panY: state.view.panY }
+  });
+  state.history.push(snapshot);
+  if(state.history.length > 60) state.history.shift();
+  state.future = [];
+}
+async function applySnapshot(snapshotStr){
+  const snap = typeof snapshotStr === 'string' ? JSON.parse(snapshotStr) : snapshotStr;
+  state.marks = snap.marks || { origin:null, x1:null, x2:null, y1:null, y2:null };
+  state.calibration = snap.calibration || null;
+  state.layers = (snap.layers || []).map(layer => ({
+    ...layer,
+    points: []
+  }));
+  state.layers.forEach(calcLayerPoints);
+  state.activeLayerId = snap.activeLayerId || state.layers[0]?.id || null;
+  state.imageName = snap.imageName || '';
+  state.imageDataUrl = snap.imageDataUrl || null;
+  if(state.imageDataUrl){
+    const loaded = await loadImageFromDataUrl(state.imageDataUrl, state.imageName);
+    state.image = loaded.img;
+  } else {
+    state.image = null;
+  }
+  state.view.scale = snap.view?.scale ?? 1;
+  state.view.panX = snap.view?.panX ?? 0;
+  state.view.panY = snap.view?.panY ?? 0;
+  renderLayerList();
+  drawAll();
+}
+async function undo(){
+  if(state.history.length <= 1) return;
+  const current = state.history.pop();
+  state.future.push(current);
+  const prev = state.history[state.history.length - 1];
+  await applySnapshot(prev);
+  setStatus('Undid the last change.');
+}
+async function redo(){
+  if(!state.future.length) return;
+  const next = state.future.pop();
+  state.history.push(next);
+  await applySnapshot(next);
+  setStatus('Redid the change.');
+}
+
+function persistAutosave(){
+  try{
+    const payload = createSessionPayload();
+    localStorage.setItem('overlay_studio_autosave_v1', JSON.stringify(payload));
+    updateAutosaveState('Autosave on');
+  }catch(err){
+    console.warn(err);
+    updateAutosaveState('Autosave limited');
+  }
+}
+async function restoreAutosave(){
+  const raw = localStorage.getItem('overlay_studio_autosave_v1');
+  if(!raw){
+    setStatus('No autosave found.');
+    return;
+  }
+  const session = JSON.parse(raw);
+  await applySessionPayload(session);
+  setStatus('Autosave restored.');
+}
+function clearEverything(){
+  state.image = null;
+  state.imageName = '';
+  state.imageDataUrl = null;
+  state.layers = [];
+  state.activeLayerId = null;
+  state.picking = null;
+  state.selectedPoint = null;
+  state.marks = { origin:null, x1:null, x2:null, y1:null, y2:null };
+  state.calibration = null;
+  state.mouseImage = null;
+  state.history = [];
+  state.future = [];
+  fitView();
+  renderLayerList();
+  persistAutosave();
+  drawAll();
+  setStatus('Cleared the workspace.');
+}
+
+function createSessionPayload(){
+  return {
+    imageDataUrl: state.imageDataUrl,
+    imageName: state.imageName,
+    layers: state.layers.map(l => ({
+      id:l.id,name:l.name,csvText:l.csvText,xCol:l.xCol,yCol:l.yCol,color:l.color,visible:l.visible,mode:l.mode
+    })),
+    marks: state.marks,
+    calibration: state.calibration,
+    activeLayerId: state.activeLayerId,
+    view: { scale: state.view.scale, panX: state.view.panX, panY: state.view.panY },
+    ui: {
+      loupeZoom: els.loupeZoom.value,
+      imgAlpha: els.imgAlpha.value,
+      lineAlpha: els.lineAlpha.value,
+      pointAlpha: els.pointAlpha.value,
+      lineWidth: els.lineWidth.value,
+      pointRadius: els.pointRadius.value,
+      showMarks: els.showMarks.value,
+      showGuides: els.showGuides.value,
+      showGrid: els.showGrid.value,
+      showLoupe: els.showLoupe.value,
+      showMiniMap: els.showMiniMap.value,
+      showHints: els.showHints.value,
+      x1Val: els.x1Val.value,
+      x2Val: els.x2Val.value,
+      y1Val: els.y1Val.value,
+      y2Val: els.y2Val.value
+    }
+  };
+}
+async function applySessionPayload(payload){
+  state.imageDataUrl = payload.imageDataUrl || null;
+  state.imageName = payload.imageName || '';
+  if(state.imageDataUrl){
+    const loaded = await loadImageFromDataUrl(state.imageDataUrl, state.imageName);
+    state.image = loaded.img;
+  } else {
+    state.image = null;
+  }
+
+  state.layers = [];
+  for(const saved of (payload.layers || [])){
+    const parsed = parseCsv(saved.csvText);
+    const layer = {
+      id: saved.id || uid(),
+      name: saved.name || 'Layer',
+      csvText: saved.csvText,
+      headers: parsed.headers,
+      rows: parsed.rows,
+      delim: parsed.delim,
+      xCol: saved.xCol || autoPickColumns(parsed.headers).xCol,
+      yCol: saved.yCol || autoPickColumns(parsed.headers).yCol,
+      color: saved.color || PALETTE[state.layers.length % PALETTE.length],
+      visible: saved.visible ?? true,
+      mode: saved.mode || 'line+points',
+      points: []
+    };
+    calcLayerPoints(layer);
+    state.layers.push(layer);
+  }
+  state.activeLayerId = payload.activeLayerId || state.layers[0]?.id || null;
+  state.marks = payload.marks || { origin:null, x1:null, x2:null, y1:null, y2:null };
+  state.calibration = payload.calibration || null;
+  state.view.scale = payload.view?.scale ?? 1;
+  state.view.panX = payload.view?.panX ?? 0;
+  state.view.panY = payload.view?.panY ?? 0;
+
+  if(payload.ui){
+    els.loupeZoom.value = payload.ui.loupeZoom ?? els.loupeZoom.value;
+    els.imgAlpha.value = payload.ui.imgAlpha ?? els.imgAlpha.value;
+    els.lineAlpha.value = payload.ui.lineAlpha ?? els.lineAlpha.value;
+    els.pointAlpha.value = payload.ui.pointAlpha ?? els.pointAlpha.value;
+    els.lineWidth.value = payload.ui.lineWidth ?? els.lineWidth.value;
+    els.pointRadius.value = payload.ui.pointRadius ?? els.pointRadius.value;
+    els.showMarks.value = payload.ui.showMarks ?? els.showMarks.value;
+    els.showGuides.value = payload.ui.showGuides ?? els.showGuides.value;
+    els.showGrid.value = payload.ui.showGrid ?? els.showGrid.value;
+    els.showLoupe.value = payload.ui.showLoupe ?? els.showLoupe.value;
+    els.showMiniMap.value = payload.ui.showMiniMap ?? els.showMiniMap.value;
+    els.showHints.value = payload.ui.showHints ?? els.showHints.value;
+    els.x1Val.value = payload.ui.x1Val ?? els.x1Val.value;
+    els.x2Val.value = payload.ui.x2Val ?? els.x2Val.value;
+    els.y1Val.value = payload.ui.y1Val ?? els.y1Val.value;
+    els.y2Val.value = payload.ui.y2Val ?? els.y2Val.value;
+  }
+
+  renderLayerList();
+  pushHistory();
+  drawAll();
+}
+
+function exportSessionJson(){
+  const payload = createSessionPayload();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:'application/json;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.download = 'overlay_studio_session.json';
+  a.href = url;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportPng(){
+  const a = document.createElement('a');
+  a.download = 'overlay_studio_export.png';
+  a.href = els.mainCanvas.toDataURL('image/png');
+  a.click();
+}
+
+// wire controls
+els.imgInput.addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  if(f) await loadImageFile(f);
+});
+els.csvInput.addEventListener('change', async e => {
+  const files = Array.from(e.target.files || []);
+  if(files.length) await loadCsvFiles(files);
+});
+els.loadSessionInput.addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  if(!f) return;
+  const payload = JSON.parse(await f.text());
+  await applySessionPayload(payload);
+  persistAutosave();
+  setStatus('Session loaded.');
+});
+
+['loupeZoom','imgAlpha','lineAlpha','pointAlpha','lineWidth','pointRadius','showMarks','showGuides','showGrid','showLoupe','showMiniMap','showHints','x1Val','x2Val','y1Val','y2Val','nudgeStep','nudgeFastStep'].forEach(id => {
+  els[id].addEventListener('input', () => { persistAutosave(); drawAll(); });
+  els[id].addEventListener('change', () => { persistAutosave(); drawAll(); });
+});
+
+els.pickOriginBtn.addEventListener('click', () => setPicking('origin'));
+els.pickX1Btn.addEventListener('click', () => setPicking('x1'));
+els.pickX2Btn.addEventListener('click', () => setPicking('x2'));
+els.pickY1Btn.addEventListener('click', () => setPicking('y1'));
+els.pickY2Btn.addEventListener('click', () => setPicking('y2'));
+els.clearOriginBtn.addEventListener('click', () => clearPoint('origin'));
+els.clearX1Btn.addEventListener('click', () => clearPoint('x1'));
+els.clearX2Btn.addEventListener('click', () => clearPoint('x2'));
+els.clearY1Btn.addEventListener('click', () => clearPoint('y1'));
+els.clearY2Btn.addEventListener('click', () => clearPoint('y2'));
+
+els.buildCalBtn.addEventListener('click', () => { buildCalibration(); });
+els.clearAllCalBtn.addEventListener('click', () => {
+  state.marks = { origin:null, x1:null, x2:null, y1:null, y2:null };
+  state.selectedPoint = null;
+  state.picking = null;
+  state.calibration = null;
+  els.calibrationSummary.textContent = 'Axis not built.';
+  pushHistory();
+  persistAutosave();
+  drawAll();
+});
+els.undoBtn.addEventListener('click', undo);
+els.redoBtn.addEventListener('click', redo);
+
+els.toolSelectBtn.addEventListener('click', () => setTool('select'));
+els.toolZoomBoxBtn.addEventListener('click', () => setTool('zoom-box'));
+els.toolHandBtn.addEventListener('click', () => setTool('hand'));
+els.fitViewBtn.addEventListener('click', () => { fitView(); setStatus('View fitted to canvas.'); });
+els.actualViewBtn.addEventListener('click', () => { actualPixelsView(); setStatus('Switched to 100% view.'); });
+els.resetViewBtn.addEventListener('click', () => { resetView(); setStatus('View reset.'); });
+els.savePngBtn.addEventListener('click', exportPng);
+els.saveSessionBtn.addEventListener('click', exportSessionJson);
+els.restoreAutoBtn.addEventListener('click', restoreAutosave);
+els.clearSessionBtn.addEventListener('click', clearEverything);
+
+els.nudgeUpBtn.addEventListener('click', () => nudgeSelected(0, -Number(els.nudgeStep.value || 1)));
+els.nudgeDownBtn.addEventListener('click', () => nudgeSelected(0, Number(els.nudgeStep.value || 1)));
+els.nudgeLeftBtn.addEventListener('click', () => nudgeSelected(-Number(els.nudgeStep.value || 1), 0));
+els.nudgeRightBtn.addEventListener('click', () => nudgeSelected(Number(els.nudgeStep.value || 1), 0));
+els.nudgeCenterBtn.addEventListener('click', () => {
+  if(state.selectedPoint) setStatus(`Selected ${pointLabel(state.selectedPoint)}. Use the arrows to refine it.`);
+});
+
+els.mainCanvas.addEventListener('mousemove', (e) => {
+  const rect = els.mainCanvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+
+  if(state.view.isPanning){
+    state.view.panX = state.view.startPanX + (e.clientX - state.view.startX);
+    state.view.panY = state.view.startPanY + (e.clientY - state.view.startY);
+    state.view.dragMoved = true;
+    drawAll();
+    return;
+  }
+
+  if(state.view.boxZooming){
+    state.view.boxX = cx;
+    state.view.boxY = cy;
+    updateZoomBox();
+    return;
+  }
+
+  state.hoverCanvas = { x: cx, y: cy };
+  state.mouseImage = canvasToImage(cx, cy);
+  drawLoupe();
+  refreshInspector();
+});
+
+els.mainCanvas.addEventListener('mouseleave', () => {
+  state.hoverCanvas = null;
+  state.mouseImage = null;
+  drawLoupe();
+  refreshInspector();
+});
+
+els.mainCanvas.addEventListener('mousedown', (e) => {
+  const rect = els.mainCanvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+
+  const panIntent = e.button === 1 || state.view.spaceKey || state.tool === 'hand';
+  if(panIntent){
+    e.preventDefault();
+    state.view.isPanning = true;
+    state.view.dragMoved = false;
+    state.view.startX = e.clientX;
+    state.view.startY = e.clientY;
+    state.view.startPanX = state.view.panX;
+    state.view.startPanY = state.view.panY;
+    updateToolCursor();
+    return;
+  }
+
+  if(state.tool === 'zoom-box'){
+    state.view.boxZooming = true;
+    state.view.boxStartX = cx;
+    state.view.boxStartY = cy;
+    state.view.boxX = cx;
+    state.view.boxY = cy;
+    updateZoomBox();
+    return;
+  }
+});
+
+window.addEventListener('mouseup', () => {
+  if(state.view.isPanning){
+    state.view.isPanning = false;
+    updateToolCursor();
+  }
+
+  if(state.view.boxZooming){
+    const rect = els.mainCanvas.getBoundingClientRect();
+    const x = Math.min(state.view.boxStartX, state.view.boxX);
+    const y = Math.min(state.view.boxStartY, state.view.boxY);
+    const w = Math.abs(state.view.boxX - state.view.boxStartX);
+    const h = Math.abs(state.view.boxY - state.view.boxStartY);
+    state.view.boxZooming = false;
+    updateZoomBox();
+
+    if(w > 20 && h > 20 && state.image){
+      const p1 = canvasToImage(x, y);
+      const p2 = canvasToImage(x + w, y + h);
+      if(p1 && p2){
+        const base = getBaseImageRectOnCanvas();
+        const boxImgW = Math.abs(p2.x - p1.x);
+        const boxImgH = Math.abs(p2.y - p1.y);
+        if(boxImgW > 0 && boxImgH > 0){
+          const scaleX = base.cw / boxImgW / base.scale;
+          const scaleY = base.ch / boxImgH / base.scale;
+          state.view.scale = clamp(Math.min(scaleX, scaleY), 0.2, 16);
+
+          const centerImgX = (p1.x + p2.x) / 2;
+          const centerImgY = (p1.y + p2.y) / 2;
+          const newRect = getImageRectOnCanvas();
+          const scale = base.scale * state.view.scale;
+          const fullW = state.image.width * scale;
+          const fullH = state.image.height * scale;
+          state.view.panX = (base.cw / 2) - centerImgX * scale - (base.cw - fullW) / 2;
+          state.view.panY = (base.ch / 2) - centerImgY * scale - (base.ch - fullH) / 2;
+          drawAll();
+          setStatus('Zoomed to selection.');
+        }
+      }
+    }
+  }
+});
+
+els.mainCanvas.addEventListener('wheel', (e) => {
+  if(!state.image) return;
+  e.preventDefault();
+  const rect = els.mainCanvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
+  zoomAtCanvasPoint(factor, cx, cy);
+}, { passive: false });
+
+els.mainCanvas.addEventListener('dblclick', () => {
+  fitView();
+  setStatus('View fitted to canvas.');
+});
+
+els.mainCanvas.addEventListener('click', (e) => {
+  if(state.view.dragMoved) return;
+  if(state.tool === 'zoom-box' || state.view.isPanning) return;
+  if(!state.image) return;
+  const rect = els.mainCanvas.getBoundingClientRect();
+  const cx = e.clientX - rect.left;
+  const cy = e.clientY - rect.top;
+  const p = canvasToImage(cx, cy);
+  if(!p){
+    setStatus('Click inside the image.');
+    return;
+  }
+  if(state.picking){
+    state.marks[state.picking] = p;
+    state.selectedPoint = state.picking;
+    clearPickMode();
+    state.calibration = null;
+    els.calibrationSummary.textContent = 'Axis changed. Build it again.';
+    pushHistory();
+    persistAutosave();
+    drawAll();
+    setStatus(`Placed ${pointLabel(state.selectedPoint)}. Use the detail view or arrows to refine it.`);
+    return;
+  }
+
+  let nearest = null, best = Infinity;
+  for(const [key, mp] of Object.entries(state.marks)){
+    if(!mp) continue;
+    const cp = imageToCanvas(mp.x, mp.y);
+    const d = Math.hypot(cp.x - cx, cp.y - cy);
+    if(d < best){ best = d; nearest = key; }
+  }
+  if(nearest && best <= 18){
+    selectPoint(nearest);
+    setStatus(`Selected ${pointLabel(nearest)}. Use arrows or the adjust pad.`);
+  }
+});
+
+window.addEventListener('keydown', async (e) => {
+  if(e.code === 'Space' && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){
+    e.preventDefault();
+    state.view.spaceKey = true;
+    updateToolCursor();
+  }
+
+  const isEditable = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName);
+  if((e.ctrlKey || e.metaKey) && !isEditable){
+    if(e.key.toLowerCase() === 'z' && !e.shiftKey){
+      e.preventDefault();
+      await undo();
+      return;
+    }
+    if((e.key.toLowerCase() === 'z' && e.shiftKey) || e.key.toLowerCase() === 'y'){
+      e.preventDefault();
+      await redo();
+      return;
+    }
+  }
+
+  if(isEditable) return;
+
+  if(e.key === 'Escape'){
+    clearPickMode();
+    setStatus('Point mode cleared.');
+    return;
+  }
+
+  if(e.key.toLowerCase() === 'v') setTool('select');
+  if(e.key.toLowerCase() === 'h') setTool('hand');
+  if(e.key.toLowerCase() === 'z') setTool('zoom-box');
+
+  if(!state.selectedPoint) return;
+  const step = e.shiftKey ? Number(els.nudgeFastStep.value || 10) : Number(els.nudgeStep.value || 1);
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)){
+    e.preventDefault();
+    if(e.key === 'ArrowUp') nudgeSelected(0, -step);
+    if(e.key === 'ArrowDown') nudgeSelected(0, step);
+    if(e.key === 'ArrowLeft') nudgeSelected(-step, 0);
+    if(e.key === 'ArrowRight') nudgeSelected(step, 0);
+    persistAutosave();
+    setStatus(`Adjusted ${pointLabel(state.selectedPoint)}.${e.shiftKey ? ' Fast step applied.' : ''}`);
+  }
+});
+
+window.addEventListener('keyup', (e) => {
+  if(e.code === 'Space'){
+    state.view.spaceKey = false;
+    if(!state.view.isPanning) updateToolCursor();
+  }
+});
+
+function init(){
+  updateToolCursor();
+  resizeAllCanvases();
+  renderLayerList();
+  refreshInspector();
+  try{
+    if(localStorage.getItem('overlay_studio_autosave_v1')) updateAutosaveState('Autosave ready');
+  }catch(err){
+    updateAutosaveState('Autosave unavailable');
+  }
+}
+init();
+</script>
+</body>
+</html>
