@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>NT 主表审阅台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root{
+    --bg:#eef4ff;
+    --bg2:#f8fbff;
+    --card:rgba(255,255,255,.92);
+    --line:#dbe6f6;
+    --text:#15263c;
+    --muted:#677993;
+    --blue:#2f6df6;
+    --blue-soft:#eaf1ff;
+    --green:#159b69;
+    --green-soft:#eaf8f2;
+    --amber:#b67818;
+    --amber-soft:#fff5df;
+    --red:#d44a4a;
+    --red-soft:#ffeded;
+    --shadow:0 18px 50px rgba(55,88,142,.12);
+    --r-xl:28px;
+    --r-lg:22px;
+    --r-md:16px;
+    --r-sm:12px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:"Inter","Noto Sans SC","Segoe UI",Arial,sans-serif;
+    color:var(--text);
+    background:
+      radial-gradient(1100px 480px at 0% -10%, rgba(47,109,246,.16), transparent 58%),
+      radial-gradient(900px 450px at 100% 0%, rgba(21,155,105,.10), transparent 54%),
+      linear-gradient(180deg,var(--bg),var(--bg2));
+  }
+  .page{
+    min-height:100vh;
+    display:grid;
+    grid-template-columns:340px minmax(0,1fr);
+    gap:16px;
+    padding:16px;
+    max-width:1700px;
+    margin:0 auto;
+  }
+  .glass{
+    background:linear-gradient(180deg,rgba(255,255,255,.96),rgba(255,255,255,.86));
+    border:1px solid rgba(255,255,255,.85);
+    box-shadow:var(--shadow);
+    backdrop-filter:blur(16px);
+    -webkit-backdrop-filter:blur(16px);
+  }
+  .sidebar,.main{border-radius:32px; min-height:0}
+  .sidebar{padding:16px; display:flex; flex-direction:column; gap:14px;}
+  .brand,.card,.panel,.topbar,.subpanel,.qa-card,.list-card{
+    border:1px solid #edf2fb;
+    border-radius:24px;
+    background:linear-gradient(180deg,#fff,#f9fbff);
+  }
+  .brand{padding:18px 18px 16px}
+  .eyebrow{
+    font-size:11px; font-weight:800; letter-spacing:.16em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:10px;
+  }
+  h1{margin:0 0 8px; font-size:30px; line-height:1.02; letter-spacing:-.03em}
+  .intro{margin:0; color:var(--muted); font-size:13px; line-height:1.6}
+  .card{padding:16px}
+  .card h2, .panel h3, .subpanel h3, .qa-card h3{margin:0 0 10px; font-size:15px; letter-spacing:-.02em}
+  .hint, .small{color:var(--muted); line-height:1.6; font-size:12px}
+  .stack{display:grid; gap:10px}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap}
+  label{display:block; margin:8px 0 6px; font-size:12px; color:var(--muted)}
+  input[type="file"], input[type="text"], select, textarea{
+    width:100%; border:1px solid var(--line); border-radius:14px; background:#fff;
+    padding:11px 12px; font:inherit; color:var(--text); outline:none;
+  }
+  textarea{min-height:92px; resize:vertical}
+  input:focus, select:focus, textarea:focus{border-color:rgba(47,109,246,.5); box-shadow:0 0 0 4px rgba(47,109,246,.10)}
+  button{
+    border:0; cursor:pointer; border-radius:14px; padding:11px 14px; font:inherit; font-weight:700;
+    transition:transform .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  button:hover{transform:translateY(-1px)}
+  .btn-primary{background:linear-gradient(180deg,#3f7eff,#2f6df6); color:#fff; box-shadow:0 10px 24px rgba(47,109,246,.24)}
+  .btn-soft{background:#f3f7ff; color:#26405f; border:1px solid #dce8fb}
+  .btn-green{background:var(--green-soft); color:#116d4b; border:1px solid #cfeee0}
+  .btn-amber{background:var(--amber-soft); color:#885a10; border:1px solid #f0dfb5}
+  .btn-red{background:var(--red-soft); color:#9b2f2f; border:1px solid #f6caca}
+  .mono{font-family:ui-monospace,SFMono-Regular,Consolas,Menlo,monospace}
+
+  .stats{display:grid; grid-template-columns:repeat(2,1fr); gap:8px}
+  .stat{
+    border-radius:18px; padding:12px; background:#fff; border:1px solid #edf2fb;
+  }
+  .stat .k{font-size:12px; color:var(--muted)}
+  .stat .v{font-size:24px; font-weight:800; letter-spacing:-.03em; margin-top:4px}
+  .statusbox{padding:12px; border-radius:16px; background:#f7fbff; border:1px dashed #d3e2f7; color:var(--muted); font-size:13px; line-height:1.55}
+
+  .list-card{padding:12px}
+  .section-title{display:flex; justify-content:space-between; gap:10px; align-items:center; margin-bottom:10px}
+  .section-title h2{margin:0; font-size:15px}
+  .count{font-size:12px; color:var(--muted)}
+  .list{display:grid; gap:8px; max-height:24vh; overflow:auto; padding-right:4px}
+  .item{
+    padding:12px; border-radius:16px; border:1px solid #e6eefb; background:#fff; cursor:pointer;
+    transition:all .15s ease;
+  }
+  .item:hover{border-color:#cdddf6; background:#fbfdff}
+  .item.active{background:var(--blue-soft); border-color:#cfe0ff; box-shadow:0 10px 22px rgba(47,109,246,.12)}
+  .item .name{font-size:13px; font-weight:700; line-height:1.45}
+  .item .meta{font-size:11px; color:var(--muted); margin-top:5px; line-height:1.5}
+  .empty{padding:12px; border-radius:16px; border:1px dashed #d6e2f3; background:#fbfdff; color:var(--muted); font-size:12px}
+
+  .main{padding:14px; display:grid; grid-template-rows:auto 1fr; gap:12px}
+  .topbar{padding:18px}
+  .top-main{display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  .title{font-size:28px; font-weight:800; letter-spacing:-.03em}
+  .subtitle{color:var(--muted); margin-top:8px; font-size:13px; line-height:1.6}
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{padding:8px 12px; border-radius:999px; font-size:12px; background:#f3f7ff; border:1px solid #dbe7fb; color:#35506f}
+
+  .workspace{display:grid; grid-template-columns:minmax(0,1.2fr) minmax(360px,.8fr); gap:12px; min-height:0}
+  .col{display:grid; gap:12px; min-height:0}
+  .panel, .subpanel, .qa-card{padding:16px}
+  .hero-grid{display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px}
+  .hero-card{padding:14px; border-radius:18px; border:1px solid #e7eefb; background:#fff}
+  .hero-card .ey{font-size:11px; text-transform:uppercase; letter-spacing:.12em; color:var(--muted); font-weight:800}
+  .hero-card .val{margin-top:8px; font-weight:800; font-size:15px; line-height:1.45; word-break:break-word}
+
+  .review-summary{padding:14px; border-radius:18px; background:linear-gradient(180deg,#f8fbff,#ffffff); border:1px solid #e6eefb; line-height:1.8; font-size:14px}
+  .grid2{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
+  .kv-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px}
+  .kv{padding:12px; border-radius:16px; background:#fff; border:1px solid #edf2fb}
+  .kv .k{font-size:11px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:6px; font-weight:700}
+  .kv .v{font-size:13px; line-height:1.65; word-break:break-word}
+  .formula-card{padding:14px; border-radius:18px; border:1px solid #e6eefb; background:#fff}
+  .formula-head{display:flex; justify-content:space-between; gap:8px; align-items:center; margin-bottom:10px}
+  .badge{padding:6px 10px; border-radius:999px; font-size:11px; font-weight:800}
+  .ok{background:var(--green-soft); color:#127452}
+  .warn{background:var(--amber-soft); color:#8c5e15}
+  .bad{background:var(--red-soft); color:#a73737}
+  .formula{font-size:12px; line-height:1.8; color:#29415d; background:#f8fbff; border:1px solid #e8eef9; border-radius:14px; padding:12px}
+  .formula strong{color:var(--text)}
+  .formula .mono{font-size:12px}
+  .subtle{font-size:12px; color:var(--muted); line-height:1.6}
+
+  .related{display:grid; gap:8px}
+  .related-item{padding:12px; border-radius:15px; border:1px solid #e7eefb; background:#fff}
+  .related-item .a{font-size:12px; font-weight:700; line-height:1.5}
+  .related-item .b{font-size:11px; color:var(--muted); margin-top:4px; line-height:1.5}
+
+  .qa-grid{display:grid; grid-template-columns:1fr; gap:12px}
+  .quick-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px}
+  .qa-table-wrap{overflow:auto; border-radius:18px; border:1px solid #e7eefb; background:#fff}
+  table{width:100%; border-collapse:collapse; min-width:960px}
+  th,td{padding:10px 12px; border-bottom:1px solid #eef2f8; text-align:left; font-size:12px; vertical-align:top}
+  th{background:#f8fbff; color:#526681; position:sticky; top:0; z-index:1}
+  tr:last-child td{border-bottom:0}
+  .pill{display:inline-flex; align-items:center; gap:6px; padding:6px 10px; border-radius:999px; background:#f5f8ff; border:1px solid #dce7fb; font-size:11px}
+
+  .footer-actions{display:flex; gap:8px; flex-wrap:wrap}
+  .muted-note{color:var(--muted); font-size:12px; line-height:1.7}
+  .splitline{height:1px; background:#edf2fb; margin:12px 0}
+
+  @media (max-width: 1320px){
+    .page{grid-template-columns:1fr}
+    .workspace{grid-template-columns:1fr}
+    .list{max-height:28vh}
+  }
+  @media (max-width: 920px){
+    .hero-grid, .grid2, .kv-grid, .stats{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <aside class="sidebar glass">
+    <section class="brand">
+      <div class="eyebrow">main table review workspace</div>
+      <h1>主表审阅台</h1>
+      <p class="intro">上传你的主表后，按 <span class="mono">paper → case → profile</span> 分层浏览，并把复审意见直接写入 <span class="mono">04_QA_LOG</span>，最后导出新的 Excel。</p>
+    </section>
+
+    <section class="card">
+      <h2>导入主表</h2>
+      <p class="hint">支持 <span class="mono">.xlsx / .json / 4张CSV</span>。最推荐直接导入你的主表 xlsx。</p>
+      <div class="stack">
+        <div>
+          <label>主表文件</label>
+          <input id="fileInput" type="file" accept=".xlsx,.json,.csv" multiple />
+        </div>
+        <div class="btn-row">
+          <button class="btn-primary" id="reloadBtn">重新检查</button>
+          <button class="btn-soft" id="restoreBtn">恢复缓存</button>
+        </div>
+        <div class="btn-row">
+          <button class="btn-soft" id="saveJsonBtn">导出工作区 JSON</button>
+          <button class="btn-soft" id="openOverlayBtn">打开 Overlay</button>
+        </div>
+      </div>
+      <div class="splitline"></div>
+      <label>检索</label>
+      <input id="searchInput" type="text" placeholder="搜索 paper_id / case_id / profile_id / fig_id / variable" />
+      <label>变量筛选</label>
+      <select id="variableFilter">
+        <option value="">全部变量</option>
+        <option>Te</option>
+        <option>Ti</option>
+        <option>ne</option>
+        <option>ni</option>
+        <option>n_imp</option>
+        <option>T_imp</option>
+      </select>
+      <label>QA 结果筛选</label>
+      <select id="qaResultFilter">
+        <option value="">全部</option>
+        <option>pass</option>
+        <option>warning</option>
+        <option>fail</option>
+        <option>info</option>
+      </select>
+    </section>
+
+    <section class="card">
+      <h2>检查与登记设置</h2>
+      <p class="hint">默认检查者会自动填充 QA 表单；QA 表登记人会写入独立导出的 QA 审阅表 Excel。</p>
+      <div class="stack">
+        <div>
+          <label>默认检查者姓名</label>
+          <input id="defaultReviewerName" type="text" placeholder="例如：王澔博" />
+        </div>
+        <div>
+          <label>QA 表登记人姓名</label>
+          <input id="qaRegistrarName" type="text" placeholder="例如：王澔博" />
+        </div>
+        <div class="btn-row">
+          <button class="btn-soft" id="applyReviewerBtn">同步到当前 QA 表单</button>
+        </div>
+        <div class="muted-note">独立导出的 QA 审阅表会自动补齐登记时间、数据来源、paper_id、case_id、profile_id、fig_id、变量、坐标和主表上下文。</div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>当前状态</h2>
+      <div class="stats">
+        <div class="stat"><div class="k">papers</div><div class="v" id="paperCount">0</div></div>
+        <div class="stat"><div class="k">cases</div><div class="v" id="caseCount">0</div></div>
+        <div class="stat"><div class="k">profiles</div><div class="v" id="profileCount">0</div></div>
+        <div class="stat"><div class="k">qa rows</div><div class="v" id="qaCount">0</div></div>
+      </div>
+      <div id="statusBox" class="statusbox" style="margin-top:10px;">未加载数据。</div>
+    </section>
+
+    <section class="list-card">
+      <div class="section-title"><h2>Papers</h2><div class="count" id="paperListCount">0</div></div>
+      <div class="list" id="paperList"></div>
+    </section>
+
+    <section class="list-card">
+      <div class="section-title"><h2>Cases</h2><div class="count" id="caseListCount">0</div></div>
+      <div class="list" id="caseList"></div>
+    </section>
+
+    <section class="list-card">
+      <div class="section-title"><h2>Profiles</h2><div class="count" id="profileListCount">0</div></div>
+      <div class="list" id="profileList"></div>
+    </section>
+  </aside>
+
+  <main class="main glass">
+    <section class="topbar">
+      <div class="top-main">
+        <div>
+          <div class="title" id="mainTitle">请先导入主表</div>
+          <div class="subtitle" id="mainSubtitle">导入后，这个页面会把 paper、case、profile 的登记内容整理成更适合人工复审的视图，并支持把复审意见写入 QA_LOG。</div>
+        </div>
+        <div class="chips">
+          <span class="chip">层级浏览</span>
+          <span class="chip">坐标与公式</span>
+          <span class="chip">ID 规则解释</span>
+          <span class="chip">QA 写回</span>
+          <span class="chip">导出新 Excel</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="col">
+        <section class="panel">
+          <h3>当前条目概览</h3>
+          <div class="hero-grid">
+            <div class="hero-card"><div class="ey">paper</div><div class="val" id="heroPaper">—</div></div>
+            <div class="hero-card"><div class="ey">case</div><div class="val" id="heroCase">—</div></div>
+            <div class="hero-card"><div class="ey">profile</div><div class="val" id="heroProfile">—</div></div>
+            <div class="hero-card"><div class="ey">figure</div><div class="val" id="heroFigure">—</div></div>
+          </div>
+          <div class="review-summary" id="reviewSummary" style="margin-top:12px;">这里会自动生成一段更适合人工复核的摘要，例如：这条 profile 属于哪篇论文、哪种工况、图号是什么、横纵坐标是什么、单位是什么、点数据文件在哪里，以及当前最值得检查什么。</div>
+        </section>
+
+        <section class="subpanel">
+          <h3>ID 规则与可读解释</h3>
+          <div class="grid2">
+            <div class="formula-card">
+              <div class="formula-head"><strong>paper_id</strong><span class="badge" id="paperRuleBadge">待检查</span></div>
+              <div class="formula" id="paperRuleBox">作者_设施_期刊_年份</div>
+            </div>
+            <div class="formula-card">
+              <div class="formula-head"><strong>case_id</strong><span class="badge" id="caseRuleBadge">待检查</span></div>
+              <div class="formula" id="caseRuleBox">paper_id__NT__简要标签</div>
+            </div>
+            <div class="formula-card">
+              <div class="formula-head"><strong>profile_id</strong><span class="badge" id="profileRuleBadge">待检查</span></div>
+              <div class="formula" id="profileRuleBox">paper_id__FigX__变量__label</div>
+            </div>
+            <div class="formula-card">
+              <div class="formula-head"><strong>坐标/公式</strong><span class="badge" id="coordBadge">说明</span></div>
+              <div class="formula" id="coordFormulaBox">从 <span class="mono">coord_desc</span> 中自动提取坐标定义或公式；若主表未写明，则这里会提示你补充。</div>
+            </div>
+          </div>
+        </section>
+
+        <section class="subpanel">
+          <h3>Paper / Case / Profile 详情</h3>
+          <div class="grid2">
+            <div>
+              <div class="section-title"><h2>Paper</h2><button class="btn-soft" id="prefillPaperQaBtn">以 paper 写 QA</button></div>
+              <div class="kv-grid" id="paperDetailGrid"></div>
+            </div>
+            <div>
+              <div class="section-title"><h2>Case</h2><button class="btn-soft" id="prefillCaseQaBtn">以 case 写 QA</button></div>
+              <div class="kv-grid" id="caseDetailGrid"></div>
+            </div>
+          </div>
+          <div class="splitline"></div>
+          <div class="section-title"><h2>Profile</h2><button class="btn-soft" id="prefillProfileQaBtn">以 profile 写 QA</button></div>
+          <div class="kv-grid" id="profileDetailGrid"></div>
+        </section>
+      </div>
+
+      <div class="col">
+        <section class="subpanel">
+          <h3>Figure / 坐标 / 关联条目</h3>
+          <div class="grid2">
+            <div class="formula-card">
+              <div class="formula-head"><strong>Figure 解释</strong><span class="badge ok">直观视图</span></div>
+              <div class="formula" id="figureExplainBox">导入主表后，这里会显示当前 profile 对应的图号、变量、曲线标签、相关 source/notes，以及同一 figure 下还有哪些 profile。</div>
+            </div>
+            <div class="formula-card">
+              <div class="formula-head"><strong>你该重点检查什么</strong><span class="badge warn">高风险点</span></div>
+              <div class="formula" id="checkFocusBox">这里会根据当前条目的字段，自动提醒你重点检查 ID、工况归属、坐标定义、单位、实验/模拟区分、CSV 路径等。</div>
+            </div>
+          </div>
+          <div class="splitline"></div>
+          <div class="section-title"><h2>同 figure 关联 profiles</h2><div class="count" id="relatedCount">0</div></div>
+          <div class="related" id="relatedProfiles"></div>
+        </section>
+
+        <section class="qa-card">
+          <h3>QA 记录编辑器</h3>
+          <div class="quick-row">
+            <button class="btn-green" id="quickPassBtn">快速记为通过</button>
+            <button class="btn-amber" id="quickWarnBtn">快速记为待确认</button>
+            <button class="btn-red" id="quickFailBtn">快速记为需修改</button>
+          </div>
+          <div class="qa-grid">
+            <div>
+              <label>entity_type</label>
+              <select id="qaEntityType">
+                <option value="paper">paper</option>
+                <option value="case">case</option>
+                <option value="profile">profile</option>
+              </select>
+            </div>
+            <div>
+              <label>entity_id</label>
+              <input id="qaEntityId" type="text" placeholder="自动填充当前 paper/case/profile" />
+            </div>
+            <div class="grid2">
+              <div>
+                <label>check_type</label>
+                <select id="qaCheckType">
+                  <option value="metadata_review">metadata_review</option>
+                  <option value="scope_review">scope_review</option>
+                  <option value="digitize_review">digitize_review</option>
+                  <option value="id_review">id_review</option>
+                  <option value="manual_review">manual_review</option>
+                </select>
+              </div>
+              <div>
+                <label>result</label>
+                <select id="qaResult">
+                  <option value="info">info</option>
+                  <option value="pass">pass</option>
+                  <option value="warning">warning</option>
+                  <option value="fail">fail</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label>issue</label>
+              <input id="qaIssue" type="text" placeholder="这次检查发现了什么" />
+            </div>
+            <div>
+              <label>suggested_fix</label>
+              <input id="qaFix" type="text" placeholder="建议如何修改主表" />
+            </div>
+            <div class="grid2">
+              <div>
+                <label>checked_by</label>
+                <input id="qaChecker" type="text" placeholder="你的名字" />
+              </div>
+              <div>
+                <label>checked_date</label>
+                <input id="qaDate" type="text" placeholder="YYYY-MM-DD" />
+              </div>
+            </div>
+            <div>
+              <label>notes</label>
+              <textarea id="qaNotes" placeholder="可以写更详细的复审说明，比如：同图含 PT / simulation，已排除；coord_desc 需补全；CSV 路径与 profile_id 不一致。"></textarea>
+            </div>
+          </div>
+          <div class="footer-actions" style="margin-top:12px;">
+            <button class="btn-primary" id="addQaBtn">加入 QA 草稿</button>
+            <button class="btn-soft" id="clearQaFormBtn">清空表单</button>
+          </div>
+          <div class="muted-note" style="margin-top:10px;">这里新增的是 <span class="mono">QA 草稿</span>。你可以先累计多条复审意见，最后一次性导出为新的 Excel，使其写入 <span class="mono">04_QA_LOG</span>。</div>
+        </section>
+
+        <section class="qa-card">
+          <h3>当前条目的 QA 历史</h3>
+          <div class="qa-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>entity_type</th><th>entity_id</th><th>check_type</th><th>result</th><th>issue</th><th>suggested_fix</th><th>checked_by</th><th>checked_date</th><th>notes</th>
+                </tr>
+              </thead>
+              <tbody id="currentQaBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="qa-card">
+      <h3>QA 草稿总表</h3>
+      <div class="footer-actions" style="margin-bottom:10px;">
+        <button class="btn-soft" id="mergeQaBtn">写入当前数据集</button>
+        <button class="btn-soft" id="exportQaCsvBtn">导出 QA_LOG CSV</button>
+        <button class="btn-soft" id="exportQaWorkbookBtn">导出 QA 审阅表 Excel</button>
+        <button class="btn-primary" id="exportWorkbookBtn">导出含 QA 的新 Excel</button>
+        <button class="btn-red" id="clearQaDraftBtn">清空 QA 草稿</button>
+      </div>
+      <div class="muted-note" style="margin-bottom:10px;">说明：浏览器里可以把 QA 内容写回到新的 Excel 文件，但无法静默覆盖你本地原文件。导出后请用新文件替换旧文件；如果原工作簿有复杂样式，数据会保留，样式可能不完全保留。</div>
+      <div class="qa-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>entity_type</th><th>entity_id</th><th>check_type</th><th>result</th><th>issue</th><th>suggested_fix</th><th>checked_by</th><th>checked_date</th><th>notes</th><th>删除</th>
+            </tr>
+          </thead>
+          <tbody id="qaDraftBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+const QA_HEADERS = ['entity_type','entity_id','check_type','result','issue','suggested_fix','checked_by','checked_date','notes'];
+const QA_REPORT_HEADERS = ['qa_record_id','export_batch_id','exported_at','registered_by','source_dataset','entity_type','entity_id','paper_id','paper_title','first_author','year','journal_abbr','device','case_id','shot','time_window','regime','operating_mode','profile_id','fig_id','variable','legend_label','coord_name','coord_desc','x_unit','y_unit_raw','y_unit_SI','data_origin','extraction_method','profile_status','check_type','result','issue','suggested_fix','checked_by','checked_date','notes'];
+const PAPER_HEADERS = ['paper_id','title','first_author','year','journal_abbr','journal_full','doi','device'];
+const CASE_HEADERS = ['case_id','paper_id','device','shot','time_window','regime','heating','operating_mode','delta_avg','kappa','Bt_T','Ip_MA','P_ECRH_MW','P_NBI_MW','source','notes'];
+const PROFILE_HEADERS = ['profile_id','paper_id','case_id','fig_id','variable','species','legend_label','coord_name','coord_desc','x_unit','y_unit_raw','y_unit_SI','data_origin','extraction_method','digitizer_tool','has_errorbars','target_points_csv_relpath','status','notes'];
+
+const state = {
+  dataset: { papers:[], cases:[], profiles:[], qaLog:[] },
+  qaDraft: [],
+  selected: { paperId:'', caseId:'', profileId:'' },
+  search: '',
+  variable: '',
+  qaResult: '',
+  sourceName: '',
+  rawWorkbook: null,
+  defaultReviewer: '',
+  qaRegistrar: '',
+};
+
+const $ = id => document.getElementById(id);
+const byId = (arr, key) => Object.fromEntries((arr||[]).map(x => [String(x[key]||''), x]));
+const clean = v => v === null || v === undefined ? '' : String(v).trim();
+const todayStr = () => new Date().toISOString().slice(0,10);
+const nowStamp = () => {
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+};
+const batchStamp = () => {
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `${d.getFullYear()}${pad(d.getMonth()+1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+};
+$('qaDate').value = todayStr();
+
+function syncReviewerUi(forceQa=false){
+  if($('defaultReviewerName')) $('defaultReviewerName').value = state.defaultReviewer || '';
+  if($('qaRegistrarName')) $('qaRegistrarName').value = state.qaRegistrar || state.defaultReviewer || '';
+  if(forceQa || !$('qaChecker').value.trim()) $('qaChecker').value = state.defaultReviewer || state.qaRegistrar || '';
+}
+
+function setStatus(msg){ $('statusBox').textContent = msg; }
+function deepClone(v){ return JSON.parse(JSON.stringify(v)); }
+function normalizeRow(row){
+  const out = {};
+  Object.entries(row || {}).forEach(([k,v]) => {
+    const key = clean(k);
+    if(!key) return;
+    out[key] = v === null || v === undefined ? '' : String(v).trim();
+  });
+  return out;
+}
+function compactRows(rows){
+  return (rows||[]).map(normalizeRow).filter(r => Object.values(r).some(v => clean(v) !== ''));
+}
+function detectSheetName(name){
+  const n = clean(name).toLowerCase();
+  if(n.includes('01_papers') || n.includes('papers')) return 'papers';
+  if(n.includes('02_cases') || n.includes('cases')) return 'cases';
+  if(n.includes('03_profiles') || n.includes('profiles')) return 'profiles';
+  if(n.includes('04_qa_log') || n.includes('qa_log') || n.includes('qa')) return 'qaLog';
+  return '';
+}
+function parseCsvText(text){
+  const lines = text.split(/\r?\n/).filter(x => x.trim() !== '');
+  if(!lines.length) return [];
+  const first = lines[0];
+  const delim = [',',';','\t'].map(d => ({d, n:(first.match(new RegExp(d === '\\t' ? '\\t' : '\\' + d, 'g'))||[]).length})).sort((a,b)=>b.n-a.n)[0].d;
+  const split = line => line.split(delim).map(s => s.trim());
+  const headers = split(lines[0]);
+  return lines.slice(1).map(line => {
+    const cells = split(line);
+    const row = {};
+    headers.forEach((h,i) => row[h] = cells[i] || '');
+    return row;
+  });
+}
+function saveWorkspace(){
+  const payload = { dataset:state.dataset, qaDraft:state.qaDraft, selected:state.selected, sourceName:state.sourceName, defaultReviewer:state.defaultReviewer, qaRegistrar:state.qaRegistrar };
+  localStorage.setItem('nt-review-workbench-v3', JSON.stringify(payload));
+}
+function restoreWorkspace(){
+  const raw = localStorage.getItem('nt-review-workbench-v3') || localStorage.getItem('nt-review-workbench-v2');
+  if(!raw){ syncReviewerUi(); setStatus('没有找到本地缓存。'); return; }
+  try{
+    const obj = JSON.parse(raw);
+    state.dataset = obj.dataset || { papers:[], cases:[], profiles:[], qaLog:[] };
+    state.qaDraft = obj.qaDraft || deepClone(state.dataset.qaLog || []);
+    state.selected = obj.selected || { paperId:'', caseId:'', profileId:'' };
+    state.sourceName = obj.sourceName || '缓存数据';
+    state.defaultReviewer = clean(obj.defaultReviewer || obj._meta?.defaultReviewer || state.defaultReviewer);
+    state.qaRegistrar = clean(obj.qaRegistrar || obj._meta?.qaRegistrar || state.qaRegistrar || state.defaultReviewer);
+    syncReviewerUi();
+    ensureSelection();
+    renderAll();
+    setStatus('已恢复本地缓存。');
+  }catch(err){ setStatus('恢复缓存失败：' + err.message); }
+}
+function exportWorkspaceJson(){
+  const blob = new Blob([JSON.stringify({ ...state.dataset, qaLog:state.qaDraft, _meta:{ defaultReviewer:state.defaultReviewer, qaRegistrar:state.qaRegistrar } }, null, 2)], {type:'application/json;charset=utf-8'});
+  downloadBlob(blob, (state.sourceName || 'nt_review') + '_workspace.json');
+}
+function downloadBlob(blob, name){
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 800);
+}
+
+async function handleFileImport(files){
+  if(!files.length) return;
+  let jsonLoaded = false;
+  for(const file of files){
+    if(file.name.toLowerCase().endsWith('.json')){
+      const obj = JSON.parse(await file.text());
+      if(obj.papers || obj.cases || obj.profiles || obj.qaLog){
+        state.rawWorkbook = null;
+        if(obj._meta){
+          state.defaultReviewer = clean(obj._meta.defaultReviewer || state.defaultReviewer);
+          state.qaRegistrar = clean(obj._meta.qaRegistrar || state.qaRegistrar || state.defaultReviewer);
+        }
+        loadDataset({
+          papers:compactRows(obj.papers || []),
+          cases:compactRows(obj.cases || []),
+          profiles:compactRows(obj.profiles || []),
+          qaLog:compactRows(obj.qaLog || [])
+        }, file.name);
+        jsonLoaded = true;
+        break;
+      }
+    }
+  }
+  if(jsonLoaded) return;
+
+  const xlsxFile = Array.from(files).find(f => f.name.toLowerCase().endsWith('.xlsx'));
+  if(xlsxFile){
+    if(typeof XLSX === 'undefined'){
+      setStatus('当前浏览器没有成功加载 xlsx 解析库。');
+      return;
+    }
+    const arrayBuffer = await xlsxFile.arrayBuffer();
+    const wb = XLSX.read(arrayBuffer, {type:'array'});
+    state.rawWorkbook = wb;
+    const dataset = { papers:[], cases:[], profiles:[], qaLog:[] };
+    wb.SheetNames.forEach(sheetName => {
+      const key = detectSheetName(sheetName);
+      if(!key) return;
+      dataset[key] = compactRows(XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:''}));
+    });
+    loadDataset(dataset, xlsxFile.name);
+    return;
+  }
+
+  const dataset = { papers:[], cases:[], profiles:[], qaLog:[] };
+  for(const file of files){
+    const key = detectSheetName(file.name);
+    if(!key) continue;
+    dataset[key] = compactRows(parseCsvText(await file.text()));
+  }
+  const total = Object.values(dataset).reduce((n, arr) => n + (arr?.length || 0), 0);
+  if(total){
+    state.rawWorkbook = null;
+    loadDataset(dataset, 'CSV 导入');
+  }else{
+    setStatus('没有识别到可导入的数据。请使用 xlsx、JSON，或文件名包含 01_PAPERS / 02_CASES / 03_PROFILES / 04_QA_LOG 的 CSV。');
+  }
+}
+
+function loadDataset(dataset, sourceName){
+  state.dataset = {
+    papers: compactRows(dataset.papers || []),
+    cases: compactRows(dataset.cases || []),
+    profiles: compactRows(dataset.profiles || []),
+    qaLog: compactRows(dataset.qaLog || []),
+  };
+  state.qaDraft = deepClone(state.dataset.qaLog || []);
+  state.sourceName = sourceName || '';
+  syncReviewerUi();
+  ensureSelection();
+  renderAll();
+  setStatus(`已加载 ${sourceName || '数据集'}。你现在可以按 paper → case → profile 浏览，并写入 QA_LOG。`);
+  saveWorkspace();
+}
+
+function ensureSelection(){
+  const paperIds = getFilteredPapers().map(p => p.paper_id);
+  if(!paperIds.includes(state.selected.paperId)) state.selected.paperId = paperIds[0] || '';
+  const caseIds = getFilteredCases(state.selected.paperId).map(c => c.case_id);
+  if(!caseIds.includes(state.selected.caseId)) state.selected.caseId = caseIds[0] || '';
+  const profileIds = getFilteredProfiles(state.selected.paperId, state.selected.caseId).map(p => p.profile_id);
+  if(!profileIds.includes(state.selected.profileId)) state.selected.profileId = profileIds[0] || '';
+}
+
+function getFilteredPapers(){
+  const q = state.search.toLowerCase();
+  const paperMap = byId(state.dataset.papers, 'paper_id');
+  const profileCandidates = state.dataset.profiles.filter(p => matchesProfileFilters(p));
+  const allowedPaperIds = new Set(profileCandidates.map(p => p.paper_id).concat(state.dataset.cases.filter(c => matchesText(c, q)).map(c => c.paper_id)));
+  let rows = state.dataset.papers.slice();
+  if(q){
+    rows = rows.filter(p => matchesText(p, q) || allowedPaperIds.has(p.paper_id));
+  }else if(state.variable || state.qaResult){
+    rows = rows.filter(p => allowedPaperIds.has(p.paper_id));
+  }
+  rows.sort((a,b) => clean(a.paper_id).localeCompare(clean(b.paper_id)));
+  return rows;
+}
+function getFilteredCases(paperId){
+  const q = state.search.toLowerCase();
+  let rows = state.dataset.cases.filter(c => !paperId || c.paper_id === paperId);
+  rows = rows.filter(c => {
+    const profileMatch = state.dataset.profiles.some(p => p.case_id === c.case_id && matchesProfileFilters(p));
+    return (state.variable || state.qaResult) ? profileMatch : true;
+  });
+  if(q) rows = rows.filter(c => matchesText(c, q) || state.dataset.profiles.some(p => p.case_id === c.case_id && matchesText(p, q) && matchesProfileFilters(p)));
+  rows.sort((a,b) => clean(a.case_id).localeCompare(clean(b.case_id)));
+  return rows;
+}
+function getFilteredProfiles(paperId, caseId){
+  let rows = state.dataset.profiles.filter(p => (!paperId || p.paper_id === paperId) && (!caseId || p.case_id === caseId));
+  rows = rows.filter(matchesProfileFilters);
+  rows.sort((a,b) => clean(a.profile_id).localeCompare(clean(b.profile_id)));
+  return rows;
+}
+function matchesText(row, q){
+  if(!q) return true;
+  return Object.values(row || {}).some(v => clean(v).toLowerCase().includes(q));
+}
+function matchesProfileFilters(profile){
+  const q = state.search.toLowerCase();
+  if(state.variable && clean(profile.variable) !== state.variable) return false;
+  if(q && !matchesText(profile, q) && !matchesText(getCase(profile.case_id), q) && !matchesText(getPaper(profile.paper_id), q)) return false;
+  if(state.qaResult){
+    const entityQa = collectQaForEntity('profile', profile.profile_id);
+    if(!entityQa.some(x => clean(x.result) === state.qaResult)) return false;
+  }
+  return true;
+}
+function getPaper(id){ return state.dataset.papers.find(x => x.paper_id === id) || null; }
+function getCase(id){ return state.dataset.cases.find(x => x.case_id === id) || null; }
+function getProfile(id){ return state.dataset.profiles.find(x => x.profile_id === id) || null; }
+
+function renderAll(){
+  renderSidebarLists();
+  renderStats();
+  renderDetail();
+  renderQaDraft();
+  saveWorkspace();
+}
+function renderStats(){
+  $('paperCount').textContent = state.dataset.papers.length;
+  $('caseCount').textContent = state.dataset.cases.length;
+  $('profileCount').textContent = state.dataset.profiles.length;
+  $('qaCount').textContent = state.qaDraft.length;
+}
+function renderSidebarLists(){
+  const papers = getFilteredPapers();
+  $('paperListCount').textContent = papers.length;
+  const cases = getFilteredCases(state.selected.paperId);
+  $('caseListCount').textContent = cases.length;
+  const profiles = getFilteredProfiles(state.selected.paperId, state.selected.caseId);
+  $('profileListCount').textContent = profiles.length;
+
+  $('paperList').innerHTML = papers.length ? papers.map(p => {
+    const count = state.dataset.profiles.filter(x => x.paper_id === p.paper_id).length;
+    return `<div class="item ${p.paper_id===state.selected.paperId?'active':''}" data-paper="${esc(p.paper_id)}"><div class="name">${esc(p.paper_id)}</div><div class="meta">${esc(p.first_author)} · ${esc(p.journal_abbr)} ${esc(p.year)} · ${count} profiles</div></div>`;
+  }).join('') : `<div class="empty">没有匹配到 paper。</div>`;
+
+  $('caseList').innerHTML = cases.length ? cases.map(c => {
+    const count = state.dataset.profiles.filter(x => x.case_id === c.case_id).length;
+    return `<div class="item ${c.case_id===state.selected.caseId?'active':''}" data-case="${esc(c.case_id)}"><div class="name">${esc(c.case_id)}</div><div class="meta">shot ${esc(c.shot)} · ${esc(c.heating)} · ${count} profiles</div></div>`;
+  }).join('') : `<div class="empty">没有匹配到 case。</div>`;
+
+  $('profileList').innerHTML = profiles.length ? profiles.map(p => {
+    return `<div class="item ${p.profile_id===state.selected.profileId?'active':''}" data-profile="${esc(p.profile_id)}"><div class="name">${esc(p.profile_id)}</div><div class="meta">${esc(p.fig_id)} · ${esc(p.variable)} · ${esc(p.coord_name)} → ${esc(p.y_unit_raw)} · ${esc(p.status)}</div></div>`;
+  }).join('') : `<div class="empty">没有匹配到 profile。</div>`;
+
+  document.querySelectorAll('[data-paper]').forEach(el => el.onclick = () => {
+    state.selected.paperId = el.dataset.paper;
+    state.selected.caseId = '';
+    state.selected.profileId = '';
+    ensureSelection(); renderAll();
+  });
+  document.querySelectorAll('[data-case]').forEach(el => el.onclick = () => {
+    state.selected.caseId = el.dataset.case;
+    state.selected.profileId = '';
+    ensureSelection(); renderAll();
+  });
+  document.querySelectorAll('[data-profile]').forEach(el => el.onclick = () => {
+    state.selected.profileId = el.dataset.profile;
+    const profile = getProfile(state.selected.profileId);
+    if(profile){ state.selected.caseId = profile.case_id; state.selected.paperId = profile.paper_id; }
+    renderAll();
+  });
+}
+function renderDetail(){
+  const paper = getPaper(state.selected.paperId);
+  const kase = getCase(state.selected.caseId);
+  const profile = getProfile(state.selected.profileId);
+
+  $('mainTitle').textContent = profile ? profile.profile_id : (kase ? kase.case_id : (paper ? paper.paper_id : '请先导入主表'));
+  $('mainSubtitle').textContent = profile ? `${profile.fig_id} · ${profile.variable} · ${profile.coord_name} → ${profile.y_unit_raw} / ${profile.y_unit_SI}` : (kase ? `当前聚焦工况 ${kase.case_id}` : (paper ? `当前聚焦论文 ${paper.paper_id}` : '导入后，这个页面会把 paper、case、profile 的登记内容整理成更适合人工复审的视图，并支持把复审意见写入 QA_LOG。'));
+
+  $('heroPaper').textContent = paper?.paper_id || '—';
+  $('heroCase').textContent = kase?.case_id || '—';
+  $('heroProfile').textContent = profile?.profile_id || '—';
+  $('heroFigure').textContent = profile?.fig_id || '—';
+
+  $('reviewSummary').innerHTML = makeSummary(paper, kase, profile);
+  setBadge('paperRuleBadge', checkPaperRule(paper));
+  setBadge('caseRuleBadge', checkCaseRule(kase, paper));
+  setBadge('profileRuleBadge', checkProfileRule(profile, paper));
+  setBadge('coordBadge', {level:'info', text:(profile?.coord_name || 'coord')});
+
+  $('paperRuleBox').innerHTML = makePaperRuleText(paper);
+  $('caseRuleBox').innerHTML = makeCaseRuleText(kase, paper);
+  $('profileRuleBox').innerHTML = makeProfileRuleText(profile, paper);
+  $('coordFormulaBox').innerHTML = makeCoordText(profile);
+
+  renderDetailGrid('paperDetailGrid', paper, PAPER_HEADERS);
+  renderDetailGrid('caseDetailGrid', kase, CASE_HEADERS);
+  renderDetailGrid('profileDetailGrid', profile, PROFILE_HEADERS);
+
+  $('figureExplainBox').innerHTML = makeFigureExplain(paper, kase, profile);
+  $('checkFocusBox').innerHTML = makeCheckFocus(paper, kase, profile);
+  renderRelatedProfiles(profile);
+  renderCurrentQa(paper, kase, profile);
+
+  if(profile) prefillQa('profile', profile.profile_id);
+  else if(kase) prefillQa('case', kase.case_id);
+  else if(paper) prefillQa('paper', paper.paper_id);
+}
+function renderDetailGrid(targetId, row, preferredOrder){
+  const host = $(targetId);
+  if(!row){ host.innerHTML = `<div class="empty">暂无数据。</div>`; return; }
+  const keys = Array.from(new Set((preferredOrder||[]).concat(Object.keys(row)))).filter(k => clean(k));
+  host.innerHTML = keys.filter(k => row[k] !== undefined).map(k => `<div class="kv"><div class="k">${esc(k)}</div><div class="v">${esc(row[k] || '—')}</div></div>`).join('');
+}
+function renderRelatedProfiles(profile){
+  const host = $('relatedProfiles');
+  if(!profile){ $('relatedCount').textContent = '0'; host.innerHTML = `<div class="empty">先选择一个 profile。</div>`; return; }
+  const related = state.dataset.profiles.filter(p => p.paper_id === profile.paper_id && p.fig_id === profile.fig_id);
+  $('relatedCount').textContent = related.length;
+  host.innerHTML = related.map(p => `<div class="related-item"><div class="a">${esc(p.profile_id)}</div><div class="b">${esc(p.variable)} · ${esc(p.legend_label)} · ${esc(p.coord_name)} → ${esc(p.y_unit_raw)}</div></div>`).join('') || `<div class="empty">同一 figure 下没有其他 profile。</div>`;
+}
+function renderCurrentQa(paper, kase, profile){
+  let rows = [];
+  if(profile) rows = collectQaForEntity('profile', profile.profile_id);
+  else if(kase) rows = collectQaForEntity('case', kase.case_id);
+  else if(paper) rows = collectQaForEntity('paper', paper.paper_id);
+  $('currentQaBody').innerHTML = rows.length ? rows.map(row => `<tr>${QA_HEADERS.map(h => `<td>${esc(row[h] || '')}</td>`).join('')}</tr>`).join('') : `<tr><td colspan="9" class="small">当前条目还没有 QA 历史。</td></tr>`;
+}
+function renderQaDraft(){
+  $('qaDraftBody').innerHTML = state.qaDraft.length ? state.qaDraft.map((row, idx) => `<tr>${QA_HEADERS.map(h => `<td>${esc(row[h] || '')}</td>`).join('')}<td><button class="btn-red" data-del-qa="${idx}">删</button></td></tr>`).join('') : `<tr><td colspan="10" class="small">暂无 QA 草稿。</td></tr>`;
+  document.querySelectorAll('[data-del-qa]').forEach(btn => btn.onclick = () => {
+    state.qaDraft.splice(Number(btn.dataset.delQa), 1);
+    renderQaDraft(); renderStats(); saveWorkspace();
+  });
+}
+function collectQaForEntity(entityType, entityId){
+  return state.qaDraft.filter(x => clean(x.entity_type) === entityType && clean(x.entity_id) === entityId);
+}
+
+function esc(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function setBadge(id, info){
+  const el = $(id);
+  el.className = 'badge ' + (info.level === 'ok' ? 'ok' : info.level === 'bad' ? 'bad' : 'warn');
+  el.textContent = info.text;
+}
+function checkPaperRule(paper){
+  if(!paper) return {level:'warn', text:'未选择'};
+  const actual = clean(paper.paper_id);
+  const expected = [paper.first_author, paper.device, paper.journal_abbr, paper.year].map(clean).filter(Boolean).join('_');
+  if(actual && expected && actual === expected) return {level:'ok', text:'匹配'};
+  return {level: actual ? 'warn' : 'bad', text: actual ? '需复核' : '缺失'};
+}
+function checkCaseRule(kase, paper){
+  if(!kase) return {level:'warn', text:'未选择'};
+  const pid = clean(kase.paper_id || paper?.paper_id);
+  const actual = clean(kase.case_id);
+  const parts = actual.split('__');
+  const ok = actual.startsWith(pid + '__NT__') && parts.length >= 3;
+  return {level: ok ? 'ok' : 'warn', text: ok ? '匹配' : '需复核'};
+}
+function checkProfileRule(profile, paper){
+  if(!profile) return {level:'warn', text:'未选择'};
+  const pid = clean(profile.paper_id || paper?.paper_id);
+  const actual = clean(profile.profile_id);
+  const ok = actual.startsWith(pid + '__' + clean(profile.fig_id) + '__' + clean(profile.variable) + '__');
+  return {level: ok ? 'ok' : 'warn', text: ok ? '匹配' : '需复核'};
+}
+function makePaperRuleText(paper){
+  if(!paper) return '作者_设施_期刊_年份';
+  const expected = [paper.first_author, paper.device, paper.journal_abbr, paper.year].map(clean).filter(Boolean).join('_') || '作者_设施_期刊_年份';
+  return `<strong>规则：</strong><span class="mono">作者_设施_期刊_年份</span><br><strong>当前：</strong><span class="mono">${esc(paper.paper_id)}</span><br><strong>按字段拼出应为：</strong><span class="mono">${esc(expected)}</span>`;
+}
+function makeCaseRuleText(kase, paper){
+  if(!kase) return 'paper_id__NT__简要标签';
+  const actual = clean(kase.case_id);
+  const pid = clean(kase.paper_id || paper?.paper_id);
+  const parts = actual.split('__');
+  const label = parts.slice(2).join('__') || '简要标签';
+  const expected = `${pid}__NT__${label}`;
+  return `<strong>规则：</strong><span class="mono">paper_id__NT__简要标签</span><br><strong>当前：</strong><span class="mono">${esc(actual)}</span><br><strong>拆解：</strong>paper_id = <span class="mono">${esc(pid || '—')}</span>；固定层级 = <span class="mono">NT</span>；标签 = <span class="mono">${esc(label)}</span><br><strong>按当前标签拼出应为：</strong><span class="mono">${esc(expected)}</span>`;
+}
+function makeProfileRuleText(profile, paper){
+  if(!profile) return 'paper_id__FigX__变量__label';
+  const actual = clean(profile.profile_id);
+  const pid = clean(profile.paper_id || paper?.paper_id);
+  const rest = actual.split('__').slice(3).join('__') || clean(profile.legend_label) || 'label';
+  const expected = `${pid}__${clean(profile.fig_id)}__${clean(profile.variable)}__${rest}`;
+  return `<strong>规则：</strong><span class="mono">paper_id__FigX__变量__label</span><br><strong>当前：</strong><span class="mono">${esc(actual)}</span><br><strong>拆解：</strong>paper_id = <span class="mono">${esc(pid || '—')}</span>；fig = <span class="mono">${esc(profile.fig_id || '—')}</span>；variable = <span class="mono">${esc(profile.variable || '—')}</span>；label = <span class="mono">${esc(rest || '—')}</span><br><strong>按当前字段拼出应为：</strong><span class="mono">${esc(expected)}</span>`;
+}
+function makeCoordText(profile){
+  if(!profile) return '从 <span class="mono">coord_desc</span> 中自动提取坐标定义或公式；若主表未写明，则这里会提示你补充。';
+  const desc = clean(profile.coord_desc);
+  const formula = extractFormula(desc);
+  const unit = clean(profile.x_unit) || '未写';
+  return `<strong>coord_name：</strong><span class="mono">${esc(profile.coord_name || '—')}</span><br><strong>x_unit：</strong><span class="mono">${esc(unit)}</span><br><strong>coord_desc：</strong>${esc(desc || '未填写')}<br><strong>抽取到的公式/定义：</strong>${formula ? `<span class="mono">${esc(formula)}</span>` : '未识别到显式公式，建议人工补充更明确的坐标定义。'}`;
+}
+function extractFormula(desc){
+  const text = clean(desc);
+  if(!text) return '';
+  const match = text.match(/([^.;]*?(?:\:=|=)[^.;]*)/);
+  if(match) return match[1].trim();
+  return '';
+}
+function makeFigureExplain(paper, kase, profile){
+  if(!profile) return '先选择一个 profile。';
+  const figureFamily = state.dataset.profiles.filter(p => p.paper_id === profile.paper_id && p.fig_id === profile.fig_id);
+  return `当前条目对应 <strong>${esc(profile.fig_id)}</strong>，记录的是 <strong>${esc(profile.variable)}</strong> 剖面，图例标签为 <strong>${esc(profile.legend_label || '—')}</strong>。<br>横坐标是 <span class="mono">${esc(profile.coord_name || '—')}</span>，纵坐标原始单位是 <span class="mono">${esc(profile.y_unit_raw || '—')}</span>，统一 SI 单位是 <span class="mono">${esc(profile.y_unit_SI || '—')}</span>。<br>该曲线归属于工况 <strong>${esc(profile.case_id || '—')}</strong>；case 的来源栏写的是 <strong>${esc(kase?.source || '—')}</strong>。<br>同一 figure 下当前共登记了 <strong>${figureFamily.length}</strong> 条 profile，可用于检查是否有漏登或错归属。`;
+}
+function makeCheckFocus(paper, kase, profile){
+  if(!profile){
+    if(kase) return `当前更适合检查 <strong>case_id 是否对应 NT 工况</strong>、<strong>regime 是否固定为 NT</strong>、以及该工况是否真的应该拥有当前数量的 profiles。`;
+    if(paper) return `当前更适合检查 <strong>paper_id 是否符合 作者_设施_期刊_年份</strong>，以及这篇论文是否确实属于当前数据库的收录范围。`;
+    return '导入数据后，这里会根据当前条目自动提示最值得检查的高风险点。';
+  }
+  const tips = [];
+  if(clean(profile.data_origin) !== 'experimental') tips.push('data_origin 不是 experimental');
+  if(!['Te','Ti','ne','ni','n_imp','T_imp'].includes(clean(profile.variable))) tips.push('variable 可能不在允许范围内');
+  if(!clean(profile.coord_desc)) tips.push('coord_desc 为空，坐标定义不充分');
+  if(!clean(profile.target_points_csv_relpath).includes(clean(profile.profile_id))) tips.push('CSV 路径与 profile_id 可能不一致');
+  if(clean(kase?.regime) !== 'NT') tips.push('case 的 regime 不是 NT');
+  if(!tips.length) tips.push('重点人工检查同图是否混有 PT / simulation 曲线，以及 legend_label 与 case 归属是否一一对应');
+  return tips.map((t,i) => `${i+1}. ${esc(t)}`).join('<br>');
+}
+function makeSummary(paper, kase, profile){
+  if(profile){
+    const qaCount = collectQaForEntity('profile', profile.profile_id).length;
+    const formula = extractFormula(clean(profile.coord_desc));
+    return `这条 <strong>profile</strong> 属于论文 <span class="mono">${esc(profile.paper_id)}</span>，对应工况 <span class="mono">${esc(profile.case_id)}</span>，图号为 <span class="mono">${esc(profile.fig_id)}</span>。它记录的是 <strong>${esc(profile.variable)}</strong> 剖面，图例标签是 <strong>${esc(profile.legend_label || '—')}</strong>。<br>横坐标是 <span class="mono">${esc(profile.coord_name || '—')}</span>${formula ? `，主表中给出的坐标定义/公式为 <span class="mono">${esc(formula)}</span>` : ''}；纵坐标原始单位为 <span class="mono">${esc(profile.y_unit_raw || '—')}</span>，统一 SI 单位为 <span class="mono">${esc(profile.y_unit_SI || '—')}</span>。<br>来源类型登记为 <strong>${esc(profile.data_origin || '—')}</strong>，提取方式为 <strong>${esc(profile.extraction_method || '—')}</strong>，点数据路径是 <span class="mono">${esc(profile.target_points_csv_relpath || '—')}</span>。当前这条 profile 在 QA_LOG 中已有 <strong>${qaCount}</strong> 条记录。`;
+  }
+  if(kase){
+    const count = state.dataset.profiles.filter(p => p.case_id === kase.case_id).length;
+    return `当前查看的是工况 <span class="mono">${esc(kase.case_id)}</span>。该工况属于论文 <span class="mono">${esc(kase.paper_id)}</span>，装置 <strong>${esc(kase.device || '—')}</strong>，shot <strong>${esc(kase.shot || '—')}</strong>，加热方式 <strong>${esc(kase.heating || '—')}</strong>，运行模式 <strong>${esc(kase.operating_mode || '—')}</strong>。目前主表里这个 case 下面共登记了 <strong>${count}</strong> 条 profile，适合检查 case 与 profile 的归属是否一致。`;
+  }
+  if(paper){
+    const caseCount = state.dataset.cases.filter(c => c.paper_id === paper.paper_id).length;
+    const profileCount = state.dataset.profiles.filter(p => p.paper_id === paper.paper_id).length;
+    return `当前查看的是论文 <span class="mono">${esc(paper.paper_id)}</span>。它的基础信息为：第一作者 <strong>${esc(paper.first_author || '—')}</strong>，期刊 <strong>${esc(paper.journal_abbr || '—')}</strong>，年份 <strong>${esc(paper.year || '—')}</strong>，装置 <strong>${esc(paper.device || '—')}</strong>。目前这篇论文下共有 <strong>${caseCount}</strong> 个 case、<strong>${profileCount}</strong> 条 profile，适合先检查命名规则和收录范围。`;
+  }
+  return '导入后，这里会自动生成更适合人工复核的摘要。';
+}
+
+function prefillQa(entityType, entityId, patch={}){
+  $('qaEntityType').value = entityType;
+  $('qaEntityId').value = entityId || '';
+  $('qaCheckType').value = patch.check_type || 'metadata_review';
+  $('qaResult').value = patch.result || 'info';
+  $('qaIssue').value = patch.issue || '';
+  $('qaFix').value = patch.suggested_fix || '';
+  if(patch.checked_by !== undefined) $('qaChecker').value = patch.checked_by;
+  $('qaDate').value = patch.checked_date || todayStr();
+  $('qaNotes').value = patch.notes || '';
+}
+function currentEntity(){
+  const profile = getProfile(state.selected.profileId);
+  const kase = getCase(state.selected.caseId);
+  const paper = getPaper(state.selected.paperId);
+  return profile ? {type:'profile', id:profile.profile_id, row:profile} : kase ? {type:'case', id:kase.case_id, row:kase} : paper ? {type:'paper', id:paper.paper_id, row:paper} : {type:'profile', id:'', row:null};
+}
+function quickFill(result){
+  const entity = currentEntity();
+  const patch = { result, check_type:'metadata_review', issue:'', suggested_fix:'', notes:'' };
+  if(entity.type === 'profile' && entity.row){
+    patch.check_type = 'metadata_review';
+    if(result === 'pass'){
+      patch.issue = `Profile ${entity.row.profile_id} 基本信息已复核`;
+      patch.notes = `已检查 fig_id=${entity.row.fig_id}、variable=${entity.row.variable}、coord_name=${entity.row.coord_name}、units=${entity.row.y_unit_raw}/${entity.row.y_unit_SI}。`;
+    }else if(result === 'warning'){
+      patch.issue = `Profile ${entity.row.profile_id} 需进一步人工确认`;
+      patch.notes = `建议重点核对 legend_label、case 归属、同图是否含 PT/simulation 曲线。`;
+    }else if(result === 'fail'){
+      patch.issue = `Profile ${entity.row.profile_id} 主表记录存在明显问题`;
+      patch.suggested_fix = `优先核对 fig_id / variable / coord_desc / target_points_csv_relpath`;
+    }
+  }else if(entity.type === 'case' && entity.row){
+    patch.check_type = 'scope_review';
+    patch.issue = result === 'pass' ? `Case ${entity.row.case_id} 工况信息已复核` : result === 'warning' ? `Case ${entity.row.case_id} 工况归属待确认` : `Case ${entity.row.case_id} 工况记录需修改`;
+    patch.notes = `建议检查 regime、shot/time_window、source 与该 case 下 profiles 是否一致。`;
+  }else if(entity.type === 'paper' && entity.row){
+    patch.check_type = 'id_review';
+    patch.issue = result === 'pass' ? `Paper ${entity.row.paper_id} 命名及基础信息已复核` : result === 'warning' ? `Paper ${entity.row.paper_id} 命名或范围待确认` : `Paper ${entity.row.paper_id} 基础信息需修改`;
+    patch.notes = `建议检查 paper_id = first_author_device_journal_year。`;
+  }
+  prefillQa(entity.type, entity.id, patch);
+}
+function addQaFromForm(){
+  const row = {
+    entity_type: clean($('qaEntityType').value),
+    entity_id: clean($('qaEntityId').value),
+    check_type: clean($('qaCheckType').value),
+    result: clean($('qaResult').value),
+    issue: clean($('qaIssue').value),
+    suggested_fix: clean($('qaFix').value),
+    checked_by: clean($('qaChecker').value),
+    checked_date: clean($('qaDate').value || todayStr()),
+    notes: clean($('qaNotes').value),
+  };
+  if(!row.entity_type || !row.entity_id){ setStatus('请至少填入 entity_type 和 entity_id。'); return; }
+  state.qaDraft.push(row);
+  renderQaDraft(); renderStats(); renderCurrentQa(getPaper(state.selected.paperId), getCase(state.selected.caseId), getProfile(state.selected.profileId));
+  setStatus(`已把 QA 记录加入草稿：${row.entity_type} / ${row.entity_id}`);
+  saveWorkspace();
+}
+function clearQaForm(){
+  prefillQa(currentEntity().type, currentEntity().id, { checked_by:$('qaChecker').value });
+}
+function mergeQa(){
+  state.dataset.qaLog = deepClone(state.qaDraft);
+  saveWorkspace();
+  setStatus('QA 草稿已写入当前数据集。');
+}
+function clearQaDraft(){
+  if(!confirm('确定清空 QA 草稿吗？')) return;
+  state.qaDraft = [];
+  renderQaDraft(); renderStats(); renderCurrentQa(getPaper(state.selected.paperId), getCase(state.selected.caseId), getProfile(state.selected.profileId));
+  saveWorkspace();
+  setStatus('已清空 QA 草稿。');
+}
+function exportQaCsv(){
+  const rows = [QA_HEADERS.join(',')].concat(state.qaDraft.map(r => QA_HEADERS.map(h => csvCell(r[h] || '')).join(',')));
+  downloadBlob(new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8'}), `${baseName()}_04_QA_LOG.csv`);
+}
+function contextForQa(row){
+  const entityType = clean(row.entity_type);
+  const entityId = clean(row.entity_id);
+  let paper = null, kase = null, profile = null;
+  if(entityType === 'paper'){
+    paper = getPaper(entityId);
+  }else if(entityType === 'case'){
+    kase = getCase(entityId);
+    paper = getPaper(clean(kase?.paper_id));
+  }else if(entityType === 'profile'){
+    profile = getProfile(entityId);
+    kase = getCase(clean(profile?.case_id));
+    paper = getPaper(clean(profile?.paper_id || kase?.paper_id));
+  }
+  if(!paper && kase) paper = getPaper(clean(kase.paper_id));
+  if(!paper && profile) paper = getPaper(clean(profile.paper_id));
+  if(!kase && profile) kase = getCase(clean(profile.case_id));
+  return { paper, kase, profile };
+}
+function buildQaReportRows(){
+  const exportedAt = nowStamp();
+  const batchId = `QA_EXPORT_${batchStamp()}`;
+  const registeredBy = clean(state.qaRegistrar || state.defaultReviewer || $('qaRegistrarName')?.value || $('qaChecker')?.value || '');
+  return state.qaDraft.map((row, idx) => {
+    const {paper, kase, profile} = contextForQa(row);
+    return {
+      qa_record_id: idx + 1,
+      export_batch_id: batchId,
+      exported_at: exportedAt,
+      registered_by: registeredBy,
+      source_dataset: state.sourceName || '',
+      entity_type: clean(row.entity_type),
+      entity_id: clean(row.entity_id),
+      paper_id: clean(profile?.paper_id || kase?.paper_id || paper?.paper_id),
+      paper_title: clean(paper?.title),
+      first_author: clean(paper?.first_author),
+      year: clean(paper?.year),
+      journal_abbr: clean(paper?.journal_abbr),
+      device: clean(profile?.device || kase?.device || paper?.device),
+      case_id: clean(profile?.case_id || kase?.case_id),
+      shot: clean(kase?.shot),
+      time_window: clean(kase?.time_window),
+      regime: clean(kase?.regime),
+      operating_mode: clean(kase?.operating_mode),
+      profile_id: clean(profile?.profile_id),
+      fig_id: clean(profile?.fig_id),
+      variable: clean(profile?.variable),
+      legend_label: clean(profile?.legend_label),
+      coord_name: clean(profile?.coord_name),
+      coord_desc: clean(profile?.coord_desc),
+      x_unit: clean(profile?.x_unit),
+      y_unit_raw: clean(profile?.y_unit_raw),
+      y_unit_SI: clean(profile?.y_unit_SI),
+      data_origin: clean(profile?.data_origin),
+      extraction_method: clean(profile?.extraction_method),
+      profile_status: clean(profile?.status),
+      check_type: clean(row.check_type),
+      result: clean(row.result),
+      issue: clean(row.issue),
+      suggested_fix: clean(row.suggested_fix),
+      checked_by: clean(row.checked_by),
+      checked_date: clean(row.checked_date),
+      notes: clean(row.notes),
+    };
+  });
+}
+function exportQaWorkbook(){
+  if(typeof XLSX === 'undefined'){
+    setStatus('当前浏览器没有成功加载 xlsx 导出库。');
+    return;
+  }
+  const rows = buildQaReportRows();
+  const wb = XLSX.utils.book_new();
+  const metaRows = [{
+    exported_at: rows[0]?.exported_at || nowStamp(),
+    registered_by: clean(state.qaRegistrar || state.defaultReviewer || ''),
+    source_dataset: state.sourceName || '',
+    qa_count: state.qaDraft.length,
+    paper_count: state.dataset.papers.length,
+    case_count: state.dataset.cases.length,
+    profile_count: state.dataset.profiles.length,
+  }];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows, {header:QA_REPORT_HEADERS}), 'QA_REVIEW_TABLE');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.qaDraft, {header:QA_HEADERS}), 'QA_LOG_RAW');
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(metaRows), 'EXPORT_META');
+  XLSX.writeFile(wb, `${baseName()}_QA_review_table.xlsx`);
+  setStatus(`已导出 QA 审阅表 Excel，共 ${rows.length} 条 QA 记录。`);
+}
+function csvCell(v){
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function baseName(){
+  return (state.sourceName || 'nt_review').replace(/\.[^.]+$/, '');
+}
+function exportWorkbook(){
+  if(typeof XLSX === 'undefined'){
+    setStatus('当前浏览器没有成功加载 xlsx 导出库。');
+    return;
+  }
+  mergeQa();
+  const wb = state.rawWorkbook ? XLSX.read(XLSX.write(state.rawWorkbook, {type:'array', bookType:'xlsx'}), {type:'array'}) : XLSX.utils.book_new();
+  if(!state.rawWorkbook){
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:PAPER_HEADERS}), '01_PAPERS');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:CASE_HEADERS}), '02_CASES');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:PROFILE_HEADERS}), '03_PROFILES');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:QA_HEADERS}), '04_QA_LOG');
+  }
+  replaceSheet(wb, '01_PAPERS', state.dataset.papers, PAPER_HEADERS);
+  replaceSheet(wb, '02_CASES', state.dataset.cases, CASE_HEADERS);
+  replaceSheet(wb, '03_PROFILES', state.dataset.profiles, PROFILE_HEADERS);
+  replaceSheet(wb, '04_QA_LOG', state.qaDraft, QA_HEADERS);
+  XLSX.writeFile(wb, `${baseName()}_with_QA.xlsx`);
+  setStatus('已导出新的 Excel，QA_LOG 已写入 04_QA_LOG。');
+}
+function replaceSheet(wb, sheetName, rows, headers){
+  const data = compactRows(rows).map(r => {
+    const out = {};
+    headers.forEach(h => out[h] = r[h] ?? '');
+    Object.keys(r).forEach(k => { if(!(k in out)) out[k] = r[k]; });
+    return out;
+  });
+  const ws = XLSX.utils.json_to_sheet(data, {header: headers, skipHeader:false});
+  if(wb.SheetNames.includes(sheetName)){
+    wb.Sheets[sheetName] = ws;
+  }else{
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+  }
+}
+
+$('fileInput').addEventListener('change', e => handleFileImport(Array.from(e.target.files || [])));
+$('searchInput').addEventListener('input', e => { state.search = e.target.value.trim(); ensureSelection(); renderAll(); });
+$('variableFilter').addEventListener('change', e => { state.variable = e.target.value; ensureSelection(); renderAll(); });
+$('qaResultFilter').addEventListener('change', e => { state.qaResult = e.target.value; ensureSelection(); renderAll(); });
+$('defaultReviewerName').addEventListener('input', e => { state.defaultReviewer = clean(e.target.value); if(!state.qaRegistrar) syncReviewerUi(); saveWorkspace(); });
+$('qaRegistrarName').addEventListener('input', e => { state.qaRegistrar = clean(e.target.value); saveWorkspace(); });
+$('applyReviewerBtn').addEventListener('click', () => {
+  state.defaultReviewer = clean($('defaultReviewerName').value);
+  if(!clean($('qaRegistrarName').value)) $('qaRegistrarName').value = state.defaultReviewer || '';
+  state.qaRegistrar = clean($('qaRegistrarName').value || state.defaultReviewer);
+  syncReviewerUi(true);
+  saveWorkspace();
+  setStatus('已把默认检查者同步到当前 QA 表单。');
+});
+$('reloadBtn').addEventListener('click', () => { ensureSelection(); renderAll(); setStatus('已重新刷新当前视图。'); });
+$('restoreBtn').addEventListener('click', restoreWorkspace);
+$('saveJsonBtn').addEventListener('click', exportWorkspaceJson);
+$('prefillPaperQaBtn').addEventListener('click', () => { const p=getPaper(state.selected.paperId); if(p) prefillQa('paper', p.paper_id); });
+$('prefillCaseQaBtn').addEventListener('click', () => { const c=getCase(state.selected.caseId); if(c) prefillQa('case', c.case_id); });
+$('prefillProfileQaBtn').addEventListener('click', () => { const p=getProfile(state.selected.profileId); if(p) prefillQa('profile', p.profile_id); });
+$('quickPassBtn').addEventListener('click', () => quickFill('pass'));
+$('quickWarnBtn').addEventListener('click', () => quickFill('warning'));
+$('quickFailBtn').addEventListener('click', () => quickFill('fail'));
+$('addQaBtn').addEventListener('click', addQaFromForm);
+$('clearQaFormBtn').addEventListener('click', clearQaForm);
+$('mergeQaBtn').addEventListener('click', mergeQa);
+$('exportQaCsvBtn').addEventListener('click', exportQaCsv);
+$('exportQaWorkbookBtn').addEventListener('click', exportQaWorkbook);
+$('exportWorkbookBtn').addEventListener('click', exportWorkbook);
+$('clearQaDraftBtn').addEventListener('click', clearQaDraft);
+$('openOverlayBtn').addEventListener('click', () => window.open('overlay_studio_bundle.html', '_blank'));
+
+syncReviewerUi();
+restoreWorkspace();
+renderAll();
+</script>
+</body>
+</html>
