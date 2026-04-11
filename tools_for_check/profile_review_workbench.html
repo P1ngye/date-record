@@ -199,9 +199,9 @@
         <div class="btn-row">
           <button class="btn-primary" id="reloadBtn">重新检查</button>
           <button class="btn-soft" id="restoreBtn">恢复缓存</button>
+          <button class="btn-red" id="clearCacheBtn">删除缓存</button>
         </div>
         <div class="btn-row">
-          <button class="btn-soft" id="saveJsonBtn">导出工作区 JSON</button>
           <button class="btn-soft" id="openOverlayBtn">打开 Overlay</button>
         </div>
       </div>
@@ -286,7 +286,7 @@
           <span class="chip">坐标与公式</span>
           <span class="chip">ID 规则解释</span>
           <span class="chip">QA 写回</span>
-          <span class="chip">导出新 Excel</span>
+          <span class="chip">导出 QA 检查表</span>
         </div>
       </div>
     </section>
@@ -430,7 +430,7 @@
             <button class="btn-primary" id="addQaBtn">加入 QA 草稿</button>
             <button class="btn-soft" id="clearQaFormBtn">清空表单</button>
           </div>
-          <div class="muted-note" style="margin-top:10px;">这里新增的是 <span class="mono">QA 草稿</span>。你可以先累计多条复审意见，最后一次性导出为新的 Excel，使其写入 <span class="mono">04_QA_LOG</span>。</div>
+          <div class="muted-note" style="margin-top:10px;">这里新增的是 <span class="mono">QA 草稿</span>。你可以先累计多条复审意见，整理后导出为独立的 QA 检查表 Excel。</div>
         </section>
 
         <section class="qa-card">
@@ -453,12 +453,10 @@
       <h3>QA 草稿总表</h3>
       <div class="footer-actions" style="margin-bottom:10px;">
         <button class="btn-soft" id="mergeQaBtn">写入当前数据集</button>
-        <button class="btn-soft" id="exportQaCsvBtn">导出 QA_LOG CSV</button>
-        <button class="btn-soft" id="exportQaWorkbookBtn">导出 QA 审阅表 Excel</button>
-        <button class="btn-primary" id="exportWorkbookBtn">导出含 QA 的新 Excel</button>
+        <button class="btn-soft" id="exportQaWorkbookBtn">导出 QA 检查表 Excel</button>
         <button class="btn-red" id="clearQaDraftBtn">清空 QA 草稿</button>
       </div>
-      <div class="muted-note" style="margin-bottom:10px;">说明：浏览器里可以把 QA 内容写回到新的 Excel 文件，但无法静默覆盖你本地原文件。导出后请用新文件替换旧文件；如果原工作簿有复杂样式，数据会保留，样式可能不完全保留。</div>
+      <div class="muted-note" style="margin-bottom:10px;">说明：这里仅保留“导出 QA 检查表 Excel”，导出结果只包含一张检查表工作表，不附带整本主表或额外说明页。</div>
       <div class="qa-table-wrap">
         <table>
           <thead>
@@ -572,9 +570,28 @@ function restoreWorkspace(){
     setStatus('已恢复本地缓存。');
   }catch(err){ setStatus('恢复缓存失败：' + err.message); }
 }
-function exportWorkspaceJson(){
-  const blob = new Blob([JSON.stringify({ ...state.dataset, qaLog:state.qaDraft, _meta:{ defaultReviewer:state.defaultReviewer, qaRegistrar:state.qaRegistrar } }, null, 2)], {type:'application/json;charset=utf-8'});
-  downloadBlob(blob, (state.sourceName || 'nt_review') + '_workspace.json');
+function clearAllLocalCaches(){
+  if(!confirm('这会删除本地缓存，并清空当前页面中的已恢复内容。是否继续？')) return;
+  ['nt-review-workbench-v3','nt-review-workbench-v2','overlay_studio_autosave_v1'].forEach(key => localStorage.removeItem(key));
+  state.dataset = { papers:[], cases:[], profiles:[], qaLog:[] };
+  state.qaDraft = [];
+  state.selected = { paperId:'', caseId:'', profileId:'' };
+  state.search = '';
+  state.variable = '';
+  state.qaResult = '';
+  state.sourceName = '';
+  state.rawWorkbook = null;
+  state.defaultReviewer = '';
+  state.qaRegistrar = '';
+  if($('fileInput')) $('fileInput').value = '';
+  if($('searchInput')) $('searchInput').value = '';
+  if($('variableFilter')) $('variableFilter').value = '';
+  if($('qaResultFilter')) $('qaResultFilter').value = '';
+  syncReviewerUi(true);
+  clearQaForm();
+  ensureSelection();
+  renderAll();
+  setStatus('已删除本地缓存，并清空当前工作区。');
 }
 function downloadBlob(blob, name){
   const url = URL.createObjectURL(blob);
@@ -1014,10 +1031,6 @@ function clearQaDraft(){
   saveWorkspace();
   setStatus('已清空 QA 草稿。');
 }
-function exportQaCsv(){
-  const rows = [QA_HEADERS.join(',')].concat(state.qaDraft.map(r => QA_HEADERS.map(h => csvCell(r[h] || '')).join(',')));
-  downloadBlob(new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8'}), `${baseName()}_04_QA_LOG.csv`);
-}
 function contextForQa(row){
   const entityType = clean(row.entity_type);
   const entityId = clean(row.entity_id);
@@ -1091,61 +1104,12 @@ function exportQaWorkbook(){
   }
   const rows = buildQaReportRows();
   const wb = XLSX.utils.book_new();
-  const metaRows = [{
-    exported_at: rows[0]?.exported_at || nowStamp(),
-    registered_by: clean(state.qaRegistrar || state.defaultReviewer || ''),
-    source_dataset: state.sourceName || '',
-    qa_count: state.qaDraft.length,
-    paper_count: state.dataset.papers.length,
-    case_count: state.dataset.cases.length,
-    profile_count: state.dataset.profiles.length,
-  }];
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows, {header:QA_REPORT_HEADERS}), 'QA_REVIEW_TABLE');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(state.qaDraft, {header:QA_HEADERS}), 'QA_LOG_RAW');
-  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(metaRows), 'EXPORT_META');
-  XLSX.writeFile(wb, `${baseName()}_QA_review_table.xlsx`);
-  setStatus(`已导出 QA 审阅表 Excel，共 ${rows.length} 条 QA 记录。`);
-}
-function csvCell(v){
-  const s = String(v ?? '');
-  return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows, {header:QA_REPORT_HEADERS}), 'QA_CHECK_TABLE');
+  XLSX.writeFile(wb, `${baseName()}_QA_check_table.xlsx`);
+  setStatus(`已导出 QA 检查表 Excel，仅包含 1 张检查表工作表，共 ${rows.length} 条 QA 记录。`);
 }
 function baseName(){
   return (state.sourceName || 'nt_review').replace(/\.[^.]+$/, '');
-}
-function exportWorkbook(){
-  if(typeof XLSX === 'undefined'){
-    setStatus('当前浏览器没有成功加载 xlsx 导出库。');
-    return;
-  }
-  mergeQa();
-  const wb = state.rawWorkbook ? XLSX.read(XLSX.write(state.rawWorkbook, {type:'array', bookType:'xlsx'}), {type:'array'}) : XLSX.utils.book_new();
-  if(!state.rawWorkbook){
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:PAPER_HEADERS}), '01_PAPERS');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:CASE_HEADERS}), '02_CASES');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:PROFILE_HEADERS}), '03_PROFILES');
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([], {header:QA_HEADERS}), '04_QA_LOG');
-  }
-  replaceSheet(wb, '01_PAPERS', state.dataset.papers, PAPER_HEADERS);
-  replaceSheet(wb, '02_CASES', state.dataset.cases, CASE_HEADERS);
-  replaceSheet(wb, '03_PROFILES', state.dataset.profiles, PROFILE_HEADERS);
-  replaceSheet(wb, '04_QA_LOG', state.qaDraft, QA_HEADERS);
-  XLSX.writeFile(wb, `${baseName()}_with_QA.xlsx`);
-  setStatus('已导出新的 Excel，QA_LOG 已写入 04_QA_LOG。');
-}
-function replaceSheet(wb, sheetName, rows, headers){
-  const data = compactRows(rows).map(r => {
-    const out = {};
-    headers.forEach(h => out[h] = r[h] ?? '');
-    Object.keys(r).forEach(k => { if(!(k in out)) out[k] = r[k]; });
-    return out;
-  });
-  const ws = XLSX.utils.json_to_sheet(data, {header: headers, skipHeader:false});
-  if(wb.SheetNames.includes(sheetName)){
-    wb.Sheets[sheetName] = ws;
-  }else{
-    XLSX.utils.book_append_sheet(wb, ws, sheetName);
-  }
 }
 
 $('fileInput').addEventListener('change', e => handleFileImport(Array.from(e.target.files || [])));
@@ -1164,7 +1128,7 @@ $('applyReviewerBtn').addEventListener('click', () => {
 });
 $('reloadBtn').addEventListener('click', () => { ensureSelection(); renderAll(); setStatus('已重新刷新当前视图。'); });
 $('restoreBtn').addEventListener('click', restoreWorkspace);
-$('saveJsonBtn').addEventListener('click', exportWorkspaceJson);
+$('clearCacheBtn').addEventListener('click', clearAllLocalCaches);
 $('prefillPaperQaBtn').addEventListener('click', () => { const p=getPaper(state.selected.paperId); if(p) prefillQa('paper', p.paper_id); });
 $('prefillCaseQaBtn').addEventListener('click', () => { const c=getCase(state.selected.caseId); if(c) prefillQa('case', c.case_id); });
 $('prefillProfileQaBtn').addEventListener('click', () => { const p=getProfile(state.selected.profileId); if(p) prefillQa('profile', p.profile_id); });
@@ -1174,9 +1138,7 @@ $('quickFailBtn').addEventListener('click', () => quickFill('fail'));
 $('addQaBtn').addEventListener('click', addQaFromForm);
 $('clearQaFormBtn').addEventListener('click', clearQaForm);
 $('mergeQaBtn').addEventListener('click', mergeQa);
-$('exportQaCsvBtn').addEventListener('click', exportQaCsv);
 $('exportQaWorkbookBtn').addEventListener('click', exportQaWorkbook);
-$('exportWorkbookBtn').addEventListener('click', exportWorkbook);
 $('clearQaDraftBtn').addEventListener('click', clearQaDraft);
 $('openOverlayBtn').addEventListener('click', () => window.open('overlay_studio_bundle.html', '_blank'));
 
