@@ -4,8 +4,8 @@
 
 这套工具由两个互相关联的本地 HTML 页面组成：
 
-- **`profile_review_workbench_with_clear_cache.html`**：主表审阅台。用于导入主表数据，按 **paper → case → profile** 分层浏览，填写 QA 复审意见，导出 QA 检查表，并支持删除本地缓存。
-- **`overlay_studio_bundle.html`**：Overlay 对齐工具。用于把图像与 CSV 曲线叠加显示，通过手动拾取坐标点完成校准，检查曲线与图中原始曲线是否对齐。
+- **`profile_review_workbench.html`**：主表审阅台。用于导入主表数据，按 **paper → case → profile** 分层浏览，填写 QA 复审意见，导出 QA 检查表，并支持删除本地缓存。
+- **`overlay_studio.html`**：Overlay 对齐工具。用于把图像与 CSV 曲线叠加显示，通过手动拾取坐标点完成校准，检查曲线与图中原始曲线是否对齐。
 
 其中，主表审阅台提供了 **“打开 Overlay”** 按钮，可直接联动打开 Overlay 页面。因此，**建议把两个 HTML 文件放在同一个文件夹中使用**。
 
@@ -23,7 +23,7 @@
 
 ---
 
-## 3. 主表审阅台（profile_review_workbench_with_clear_cache.html）
+## 3. 主表审阅台
 
 ### 3.1 功能概览
 
@@ -230,7 +230,7 @@ xxx_QA_check_table.xlsx
 
 ---
 
-## 4. Overlay Studio（overlay_studio_bundle.html）
+## 4. Overlay Studio
 
 ### 4.1 功能概览
 
