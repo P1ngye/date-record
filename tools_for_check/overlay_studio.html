@@ -985,25 +985,50 @@ function uid(){ return 'id_' + Math.random().toString(36).slice(2,10); }
 function clamp(v, min, max){ return Math.max(min, Math.min(max, v)); }
 
 function autoDetectDelimiter(text){
-  const lines = text.split(/\r?\n/).filter(x=>x.trim()!=='');
+  const lines = text.split(/\r?\n/).filter(x => x.trim() !== '');
   if(!lines.length) return ',';
-  const first = lines[0];
-  const counts = {
-    ',': (first.match(/,/g)||[]).length,
-    ';': (first.match(/;/g)||[]).length,
-    '\t': (first.match(/\t/g)||[]).length,
-  };
-  let best=',', bestCount=-1;
-  for (const [k,v] of Object.entries(counts)) if (v > bestCount) { best = k; bestCount = v; }
-  return best;
+
+  // Detect the delimiter from the first non-empty line.
+  // Supports comma, semicolon, tab, and whitespace-separated numeric data.
+  const first = lines[0].trim();
+  if(first.includes(',')) return ',';
+  if(first.includes(';')) return ';';
+  if(first.includes('\t')) return '\t';
+  return 'whitespace';
 }
 
 function parseCsv(text){
   const delim = autoDetectDelimiter(text);
   const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
   if(!lines.length) throw new Error('CSV is empty.');
-  const split = line => line.split(delim).map(s => s.trim());
-  return { headers: split(lines[0]), rows: lines.slice(1).map(split), delim };
+
+  const split = line => {
+    if(delim === 'whitespace'){
+      return line.trim().split(/\s+/).map(s => s.trim());
+    }
+    return line.split(delim).map(s => s.trim());
+  };
+
+  const firstCols = split(lines[0]);
+  const firstIsHeader = firstCols.some(v => !Number.isFinite(Number(v)));
+
+  if(firstIsHeader){
+    return {
+      headers: firstCols,
+      rows: lines.slice(1).map(split),
+      delim
+    };
+  }
+
+  // Numeric files without a header, e.g.:
+  // 0.0078861678 5.7059234524
+  // 0.0280198328 5.7070010876
+  // are treated as x/y data. Extra columns are preserved as col3, col4, ...
+  return {
+    headers: firstCols.map((_, i) => i === 0 ? 'x' : i === 1 ? 'y' : `col${i + 1}`),
+    rows: lines.map(split),
+    delim
+  };
 }
 
 function autoPickColumns(headers){
