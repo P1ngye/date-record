@@ -1,0 +1,9 @@
+# Minimal dependencies for preprocessing, PT/CSV export, and profile visualization.
+# torch>=2.6 fixes CVE-2025-32434 in restricted checkpoint loading.
+torch>=2.6,<3
+numpy>=1.26.4,<3
+scipy>=1.13.1,<2
+matplotlib>=3.8.4,<4
+openpyxl>=3.1.5,<4
+PyYAML>=6.0.2,<7
+pytest>=9.0.3,<10
